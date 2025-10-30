@@ -1,0 +1,606 @@
+<!--
+    AI献立プランナー (Meal Planner) - 単一ファイル版
+    ユーザーの要望に従い、UI編集のしやすさを考慮してHTMLファイル形式に統一。
+    全てのCSS (Tailwind)、HTML、そしてJavaScriptロジックをこのファイルに含める。
+-->
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI献立プランナー 🍽️</title>
+    <!-- Tailwind CSSを読み込むぞ！これでかっこいいUIを作る！ -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* カスタムアニメーション */
+        @keyframes slide-up {
+            from { opacity: 0; transform: translate(-50%, 10px); }
+            to { opacity: 1; transform: translate(-50%, 0); }
+        }
+        .animate-slide-up {
+            animation: slide-up 0.3s ease-out forwards;
+        }
+        /* トースト用のスタイル */
+        #matcha-toast-meal-planner {
+            transition: opacity 0.3s ease-in-out;
+            bottom: 2rem;
+        }
+    </style>
+    <script>
+        // Interフォントを使用するぞ！
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-gray-100 min-h-screen font-sans">
+
+    <!-- メインアプリコンテナ (UIはこの下に全部あるぞ！) -->
+    <div id="meal-planner-app" class="p-4 sm:p-8 space-y-8 max-w-4xl mx-auto">
+
+        <!-- 1. 献立提案フォーム -->
+        <div class="bg-white p-6 rounded-xl shadow-2xl border border-green-100">
+            <h2 class="text-3xl font-extrabold text-green-700 mb-4">AI献立提案フォーム</h2>
+            <p class="text-gray-600 mb-6">冷蔵庫の中身や気分を入力してね！Geminiがぴったりの献立を提案するぞ！</p>
+            
+            <form id="meal-form" class="space-y-4">
+                <div>
+                    <label for="ingredients" class="block text-sm font-bold text-gray-700 mb-1">1. 冷蔵庫にあるもの（必須）</label>
+                    <textarea id="ingredients" rows="3" class="w-full p-3 border border-gray-300 rounded-lg focus:border-green-500 focus:ring-green-500 transition-all shadow-sm" placeholder="例: 鶏むね肉、玉ねぎ、トマト、卵、ネギ"></textarea>
+                </div>
+
+                <div>
+                    <label for="mood" class="block text-sm font-bold text-gray-700 mb-1">2. 食べたい気分・ジャンル（任意）</label>
+                    <input type="text" id="mood" class="w-full p-3 border border-gray-300 rounded-lg focus:border-green-500 focus:ring-green-500 transition-all shadow-sm" placeholder="例: 疲れているからあっさりしたもの、ガッツリ中華、ダイエット向き">
+                </div>
+
+                <div class="flex space-x-4">
+                    <div class="flex-1">
+                        <label for="people" class="block text-sm font-bold text-gray-700 mb-1">3. 人数</label>
+                        <input type="number" id="people" value="1" min="1" class="w-full p-3 border border-gray-300 rounded-lg focus:border-green-500 focus:ring-green-500 transition-all shadow-sm" required>
+                    </div>
+                    <div class="flex-1">
+                        <label for="budget" class="block text-sm font-bold text-gray-700 mb-1">4. 予算 (円)</label>
+                        <input type="number" id="budget" class="w-full p-3 border border-gray-300 rounded-lg focus:border-green-500 focus:ring-green-500 transition-all shadow-sm" placeholder="例: 1000 (任意)">
+                    </div>
+                </div>
+
+                <button type="submit" id="generate-button" class="w-full py-3 bg-green-600 text-white font-bold text-lg rounded-full shadow-lg hover:bg-green-700 transition-all active:scale-95 disabled:bg-gray-400">
+                    🍱 献立をAIに提案してもらう！
+                </button>
+            </form>
+        </div>
+
+        <!-- 2. 献立提案結果表示エリア -->
+        <div id="result-area" class="hidden">
+            <div id="loading-spinner" class="text-center p-10 hidden">
+                <div class="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-green-500 mx-auto mb-3"></div>
+                <p class="text-green-600 font-semibold">Geminiが最高の献立を考えてるぞ...しばらく待ってね！</p>
+            </div>
+            
+            <div id="meal-proposal-card" class="bg-white p-6 rounded-xl shadow-2xl border border-green-100 hidden">
+                <h2 class="text-2xl font-extrabold text-gray-800 border-b pb-3 mb-4 flex items-center">
+                    <span class="text-3xl mr-2">💡</span>AI提案の献立
+                </h2>
+                <div id="proposal-content" class="text-gray-700 space-y-4">
+                    <!-- 提案内容がここに入る -->
+                </div>
+            </div>
+        </div>
+
+        <!-- 3. 買い物リスト履歴 -->
+        <div id="history-area" class="bg-white p-6 rounded-xl shadow-2xl border border-green-100">
+            <h2 class="text-2xl font-extrabold text-gray-800 border-b pb-3 mb-4 flex items-center">
+                <span class="text-3xl mr-2">🛒</span>保存済み買い物リスト
+            </h2>
+            <div id="shopping-list-history" class="space-y-3">
+                <p id="history-loading" class="text-center text-gray-500">リストを読み込み中...</p>
+                <!-- 買い物リストの履歴がここに入る -->
+            </div>
+        </div>
+        
+        <p class="text-xs text-center text-gray-400">ユーザーID: <span id="display-user-id">未認証</span></p>
+
+    </div>
+
+    <!-- 4. JavaScriptロジック (全てここに入れるぞ！) -->
+    <script type="module">
+        // --- Firebase imports ---
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInWithCustomToken, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, query, where, getDocs, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // --- グローバル変数と初期化設定 ---
+        let db;
+        let auth;
+        let userId = 'initializing...';
+        
+        // 買い物リストのFirestoreコレクションパスを構築するぜ！
+        const getShoppingListCollectionPath = (uid) => {
+            // __app_id はグローバルスコープで提供されるが、ここではフォールバックを使うぞ！
+            const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-meal-planner';
+            return `artifacts/${appId}/users/${uid}/shopping_lists`;
+        };
+        
+        // --- アプリ初期化 ---
+        const initApp = async () => {
+            document.getElementById('display-user-id').textContent = '認証中...';
+            
+            // 1. Firebaseの初期化と認証
+            try {
+                const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
+                const app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                auth = getAuth(app);
+
+                // 認証処理
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    await signInAnonymously(auth);
+                }
+                
+                // ユーザーIDを設定
+                userId = auth.currentUser?.uid || crypto.randomUUID();
+                document.getElementById('display-user-id').textContent = userId;
+
+            } catch (error) {
+                console.error("🚨 Firebaseの初期化または認証に失敗！", error);
+                userId = crypto.randomUUID();
+                document.getElementById('display-user-id').textContent = `${userId} (認証失敗)`;
+                showToast('🚨 データ保存・読み込み機能が使えないぞ！認証失敗！', true);
+            }
+
+            // 2. イベントリスナーを設定
+            document.getElementById('meal-form').addEventListener('submit', handleFormSubmit);
+
+            // 3. 初期データの読み込み（買い物リスト）
+            loadShoppingLists();
+        };
+
+
+        // --- Gemini API連携ロジック ---
+
+        const handleFormSubmit = async (event) => {
+            event.preventDefault();
+
+            const form = document.getElementById('meal-form');
+            const ingredients = form.elements.ingredients.value.trim();
+            const mood = form.elements.mood.value.trim();
+            const people = form.elements.people.value;
+            const budget = form.elements.budget.value.trim();
+
+            if (!ingredients) {
+                showToast('🚨 冷蔵庫にあるものは必須項目だぞ！', true);
+                return;
+            }
+            
+            // UIをローディング状態に切り替え
+            const generateButton = document.getElementById('generate-button');
+            generateButton.disabled = true;
+            generateButton.textContent = '提案を生成中...';
+            document.getElementById('result-area').classList.remove('hidden');
+            document.getElementById('meal-proposal-card').classList.add('hidden');
+            document.getElementById('loading-spinner').classList.remove('hidden');
+
+            try {
+                const proposal = await generateMealProposal(ingredients, mood, people, budget);
+                renderProposal(proposal);
+            } catch (error) {
+                console.error("🚨 API呼び出しエラー:", error);
+                renderError(`ごめん！AIとの通信に失敗したぞ。エラー: ${error.message}`);
+            } finally {
+                // UIを元に戻す
+                generateButton.disabled = false;
+                generateButton.textContent = '🍱 献立をAIに提案してもらう！';
+                document.getElementById('loading-spinner').classList.add('hidden');
+            }
+        };
+
+        const generateMealProposal = async (ingredients, mood, people, budget) => {
+            const systemPrompt = `
+                あなたはプロの料理家であり、栄養士です。ユーザーの入力に基づき、以下のJSONスキーマに厳密に従って、献立を提案してください。
+
+                ### 提案のルール
+                1. 提案は必ず主菜と副菜（最低1品）を含むこと。
+                2. 提案された献立は、ユーザーが入力した「冷蔵庫にあるもの」を最大限に活用すること。
+                3. 「買い物リスト」は、提案された献立を作るために、**「冷蔵庫にあるもの」以外**で追加購入が必要なものだけを記載すること。
+                4. 全ての提案は日本語で、親しみやすく、かつプロフェッショナルなトーンで行うこと。
+                5. 提案の「説明」は、献立のテーマ、栄養バランス、なぜこの献立を選んだのかを簡潔にまとめること。
+            `;
+
+            const userQuery = `
+                以下の条件で献立を提案してください:
+                - 冷蔵庫にあるもの (必須): ${ingredients}
+                - 食べたい気分/ジャンル (任意): ${mood || '指定なし'}
+                - 人数: ${people}人前
+                - 予算目安 (任意): ${budget ? budget + '円以内' : '指定なし'}
+            `;
+            
+            // API設定
+            const apiKey = "";
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+
+            // レスポンススキーマ
+            const responseSchema = {
+                type: "OBJECT",
+                properties: {
+                    proposal: {
+                        type: "OBJECT",
+                        properties: {
+                            theme: { type: "STRING", description: "提案された献立に付ける魅力的なタイトル" },
+                            explanation: { type: "STRING", description: "献立のポイントや栄養バランスに関する簡単な説明（3〜4行）" },
+                            totalCostEstimate: { type: "STRING", description: "提案された献立の合計コストの概算" },
+                            menus: {
+                                type: "ARRAY",
+                                description: "主菜と副菜のリスト",
+                                items: {
+                                    type: "OBJECT",
+                                    properties: {
+                                        name: { type: "STRING", description: "料理名" },
+                                        type: { type: "STRING", description: "主菜 or 副菜" },
+                                        description: { type: "STRING", description: "簡単な作り方の説明または特徴" },
+                                        requiredIngredients: {
+                                            type: "ARRAY",
+                                            description: "この料理に必要な全ての材料",
+                                            items: { type: "STRING" }
+                                        }
+                                    },
+                                    propertyOrdering: ["name", "type", "description", "requiredIngredients"]
+                                }
+                            },
+                            shoppingList: {
+                                type: "ARRAY",
+                                description: "追加購入が必要な材料のリスト。",
+                                items: { type: "STRING" }
+                            }
+                        },
+                        propertyOrdering: ["theme", "explanation", "totalCostEstimate", "menus", "shoppingList"]
+                    }
+                }
+            };
+
+            const payload = {
+                contents: [{ parts: [{ text: userQuery }] }],
+                systemInstruction: { parts: [{ text: systemPrompt }] },
+                generationConfig: {
+                    responseMimeType: "application/json",
+                    responseSchema: responseSchema
+                }
+            };
+
+            // APIコールとExponential Backoffの実装
+            const MAX_RETRIES = 5;
+            for (let i = 0; i < MAX_RETRIES; i++) {
+                try {
+                    const response = await fetch(apiUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`HTTPエラー: ${response.status} ${response.statusText}`);
+                    }
+
+                    const result = await response.json();
+                    const jsonText = result.candidates?.[0]?.content?.parts?.[0]?.text;
+                    
+                    if (!jsonText) {
+                        throw new Error("JSONレスポンスが空だよ！");
+                    }
+                    
+                    const parsedData = JSON.parse(jsonText);
+                    if (parsedData.proposal && parsedData.proposal.menus) {
+                        return parsedData.proposal;
+                    } else {
+                        throw new Error("JSONの構造がおかしいぞ！");
+                    }
+
+                } catch (error) {
+                    console.warn(`⚠️ リトライ中 (${i + 1}/${MAX_RETRIES}):`, error.message);
+                    if (i === MAX_RETRIES - 1) throw error;
+                    
+                    const delay = Math.pow(2, i) * 1000;
+                    await new Promise(resolve => setTimeout(resolve, delay));
+                }
+            }
+        };
+
+        // --- 結果表示と買い物リスト機能 ---
+
+        const renderProposal = (proposal) => {
+            const contentDiv = document.getElementById('proposal-content');
+            const card = document.getElementById('meal-proposal-card');
+            
+            // メニューリストのHTMLを生成
+            const menusHTML = proposal.menus.map(menu => `
+                <div class="p-4 bg-green-50 rounded-lg border-l-4 border-green-500 shadow-sm">
+                    <h4 class="text-lg font-bold text-gray-800">${menu.name} <span class="text-sm font-normal text-green-600">(${menu.type})</span></h4>
+                    <p class="text-sm text-gray-600 mt-1">${menu.description}</p>
+                    <div class="mt-2 text-xs text-gray-500">
+                        <span class="font-semibold">使用材料:</span> ${menu.requiredIngredients.join(', ')}
+                    </div>
+                </div>
+            `).join('');
+            
+            // 買い物リストのHTMLを生成
+            let shoppingListHTML;
+            if (proposal.shoppingList && proposal.shoppingList.length > 0) {
+                const listItems = proposal.shoppingList.map(item => `
+                    <li class="flex items-center space-x-2 text-sm text-gray-700">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-check-circle"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="m9 11 3 3L22 4"/></svg>
+                        <span>${item}</span>
+                    </li>
+                `).join('');
+                
+                // Firestore保存のための関数呼び出し（JSON.stringifyを使って文字列をエスケープするぞ！）
+                const jsonItems = JSON.stringify(proposal.shoppingList).replace(/"/g, '&quot;');
+
+                shoppingListHTML = `
+                    <div class="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
+                        <h4 class="text-lg font-bold text-yellow-800 mb-2 flex items-center">🛒 必要な買い物リスト</h4>
+                        <ul class="list-none space-y-1 pl-0">
+                            ${listItems}
+                        </ul>
+                        <button onclick="saveShoppingList('${proposal.theme}', '${jsonItems}')"
+                                class="mt-4 w-full py-2 bg-yellow-500 text-white font-bold rounded-lg hover:bg-yellow-600 transition-colors active:scale-95 shadow-md">
+                            リストを保存する！
+                        </button>
+                    </div>
+                `;
+            } else {
+                shoppingListHTML = `
+                    <div class="p-4 bg-blue-50 text-blue-800 rounded-lg border border-blue-200 font-semibold text-center">
+                        👏 素晴らしい！冷蔵庫の食材だけで賄えるよ！
+                    </div>
+                `;
+            }
+
+            // 全体のHTMLを組み立てて表示
+            contentDiv.innerHTML = `
+                <h3 class="text-3xl font-extrabold text-green-700">${proposal.theme}</h3>
+                <p class="text-sm italic text-gray-500 mb-4 border-b pb-4">予算概算: ${proposal.totalCostEstimate}</p>
+                
+                <div class="bg-gray-50 p-4 rounded-lg mb-4">
+                    <h4 class="font-bold text-gray-700">ポイント:</h4>
+                    <p class="text-sm text-gray-600 whitespace-pre-wrap">${proposal.explanation}</p>
+                </div>
+
+                <h4 class="text-xl font-bold text-gray-800 border-b border-dashed pb-2 mb-3">🍽️ 献立</h4>
+                <div class="space-y-3">
+                    ${menusHTML}
+                </div>
+                
+                <h4 class="text-xl font-bold text-gray-800 border-b border-dashed pb-2 mb-3 mt-6">🛍️ 買い物</h4>
+                ${shoppingListHTML}
+            `;
+
+            card.classList.remove('hidden');
+        };
+
+        const renderError = (message) => {
+            const card = document.getElementById('meal-proposal-card');
+            card.classList.remove('hidden');
+            card.innerHTML = `
+                <div class="text-center p-8 bg-red-50 rounded-xl border border-red-200">
+                    <span class="text-4xl block mb-3">❌</span>
+                    <h3 class="text-xl font-bold text-red-600 mb-2">献立提案に失敗！</h3>
+                    <p class="text-red-500 text-sm">${message}</p>
+                </div>
+            `;
+        };
+
+        /**
+         * 買い物リストをFirestoreに保存するぞ！（グローバルに定義してHTMLから呼び出す）
+         */
+        window.saveShoppingList = async (theme, jsonItemsString) => {
+            if (!db || !userId || userId === 'initializing...') {
+                showToast('🚨 データ保存に失敗！認証を待って再試行してね。', true);
+                return;
+            }
+            
+            let items;
+            try {
+                items = JSON.parse(jsonItemsString);
+            } catch (e) {
+                console.error("🚨 JSONパースエラー", e);
+                showToast('🚨 リストデータの形式がおかしいぞ！', true);
+                return;
+            }
+
+
+            const saveButton = event.currentTarget;
+            const originalText = saveButton.textContent;
+            saveButton.textContent = '保存中...';
+            saveButton.disabled = true;
+
+            try {
+                const listData = {
+                    theme: theme,
+                    items: items,
+                    createdAt: new Date(),
+                };
+
+                const colRef = collection(db, getShoppingListCollectionPath(userId));
+                await addDoc(colRef, listData);
+
+                showToast('✅ 買い物リストを保存したよ！履歴を確認してね！');
+                loadShoppingLists();
+                
+            } catch (e) {
+                console.error("🚨 Firestoreへの保存に失敗！", e);
+                showToast(`🚨 リスト保存エラー: ${e.message}`, true);
+            } finally {
+                saveButton.textContent = originalText;
+                saveButton.disabled = false;
+            }
+        };
+
+        /**
+         * Firestoreから買い物リストの履歴を読み込むぞ！
+         */
+        const loadShoppingLists = async () => {
+            const historyDiv = document.getElementById('shopping-list-history');
+            const loadingMessage = document.getElementById('history-loading');
+            
+            if (!db || !userId || userId === 'initializing...') {
+                historyDiv.innerHTML = '<p class="text-red-500 text-sm">認証中/未認証のため履歴を読み込めないぞ！</p>';
+                return;
+            }
+            
+            loadingMessage.classList.remove('hidden');
+
+            try {
+                const colRef = collection(db, getShoppingListCollectionPath(userId));
+                // ソートは in-memory で行うため、クエリでは指定しない
+                const querySnapshot = await getDocs(query(colRef));
+
+                const lists = [];
+                querySnapshot.forEach((doc) => {
+                    lists.push({ id: doc.id, ...doc.data() });
+                });
+                
+                // 日付で降順ソート（新しいものが上）
+                lists.sort((a, b) => (b.createdAt?.toDate() || 0) - (a.createdAt?.toDate() || 0));
+
+                renderShoppingListHistory(lists);
+
+            } catch (e) {
+                console.error("🚨 Firestoreからの読み込みに失敗！", e);
+                historyDiv.innerHTML = `<p class="text-red-500 text-sm">履歴の読み込みエラー: ${e.message}</p>`;
+            } finally {
+                loadingMessage.classList.add('hidden');
+            }
+        };
+
+        /**
+         * 買い物リストの履歴をHTMLで描画するぞ！
+         */
+        const renderShoppingListHistory = (lists) => {
+            const historyDiv = document.getElementById('shopping-list-history');
+
+            if (lists.length === 0) {
+                historyDiv.innerHTML = '<p class="text-gray-500 text-center p-4 bg-gray-50 rounded-lg">まだ保存された買い物リストはないよ。</p>';
+                return;
+            }
+
+            const historyHTML = lists.map(list => {
+                const date = list.createdAt?.toDate();
+                const dateStr = date ?
+                    date.toLocaleDateString('ja-JP', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }) :
+                    '日付不明';
+                
+                const itemsHTML = list.items.map(item => `
+                    <span class="inline-block bg-gray-200 text-gray-700 text-xs font-semibold px-2 py-1 rounded-full mr-2 mb-1">${item}</span>
+                `).join('');
+
+                return `
+                    <div id="list-${list.id}" class="p-4 bg-white rounded-xl shadow-md border border-gray-100 transition-shadow hover:shadow-lg">
+                        <div class="flex justify-between items-start mb-2">
+                            <h4 class="font-bold text-gray-800">${list.theme}</h4>
+                            <button onclick="deleteShoppingList('${list.id}')"
+                                    class="text-red-400 hover:text-red-600 transition-colors" title="このリストを削除">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-trash-2"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg>
+                            </button>
+                        </div>
+                        <p class="text-xs text-gray-500 mb-2">保存日時: ${dateStr}</p>
+                        <div class="flex flex-wrap">
+                            ${itemsHTML}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            historyDiv.innerHTML = historyHTML;
+        };
+
+        /**
+         * 買い物リストをFirestoreから削除するぞ！（グローバルに定義してHTMLから呼び出す）
+         */
+        window.deleteShoppingList = (listId) => {
+            if (!db || !userId || userId === 'initializing...') {
+                showToast('🚨 データ削除に失敗！システムが未認証かも。', true);
+                return;
+            }
+
+            // 削除確認のカスタムモーダルを表示する
+            const modalHTML = `
+                <div id="delete-confirm-modal" class="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-[9000]">
+                    <div class="bg-white p-6 rounded-xl shadow-2xl max-w-sm w-full text-center transform transition-all scale-100 animate-slide-up">
+                        <span class="text-4xl block mb-4 text-red-500">🗑️</span>
+                        <h3 class="text-xl font-bold mb-2 text-gray-800">リストを削除しますか？</h3>
+                        <p class="text-sm text-gray-500 mb-6">この買い物リストは元に戻せないぞ！</p>
+                        
+                        <div class="flex justify-center space-x-4">
+                            <button onclick="document.getElementById('delete-confirm-modal').remove()" 
+                                    class="px-5 py-2 bg-gray-200 text-gray-700 font-semibold rounded-full hover:bg-gray-300 transition-colors active:scale-95">
+                                キャンセル
+                            </button>
+                            <button onclick="performDeleteShoppingList('${listId}')" 
+                                    class="px-5 py-2 bg-red-600 text-white font-semibold rounded-full hover:bg-red-700 transition-colors active:scale-95 shadow-md">
+                                削除する
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.body.insertAdjacentHTML('beforeend', modalHTML);
+        };
+
+        // 実際の削除処理（グローバルに定義してHTMLから呼び出す）
+        window.performDeleteShoppingList = async (listId) => {
+            // モーダルを閉じる
+            document.getElementById('delete-confirm-modal')?.remove();
+
+            try {
+                const docRef = doc(db, getShoppingListCollectionPath(userId), listId);
+                await deleteDoc(docRef);
+                showToast('🗑️ 買い物リストを削除したよ！');
+                loadShoppingLists();
+
+            } catch (e) {
+                console.error("🚨 リストの削除に失敗！", e);
+                showToast(`🚨 リスト削除エラー: ${e.message}`, true);
+            }
+        };
+
+
+        // --- 汎用ヘルパー関数 (Toast) ---
+
+        const showToast = (message, isError = false) => {
+            const container = document.body;
+            let toast = document.getElementById('matcha-toast-meal-planner');
+
+            if (!toast) {
+                toast = document.createElement('div');
+                toast.id = 'matcha-toast-meal-planner';
+                toast.className = 'fixed bottom-5 left-1/2 transform -translate-x-1/2 px-6 py-3 rounded-full shadow-xl opacity-0 transition-opacity duration-300 z-[9999] text-sm font-semibold';
+                container.appendChild(toast);
+            }
+
+            toast.classList.remove('opacity-100', 'bg-green-600', 'bg-red-600');
+            
+            toast.textContent = message;
+            toast.classList.add(isError ? 'bg-red-600' : 'bg-green-600', 'text-white');
+            toast.classList.remove('opacity-0');
+            toast.classList.add('opacity-100');
+
+            setTimeout(() => {
+                toast.classList.remove('opacity-100');
+                toast.classList.add('opacity-0');
+            }, 3000);
+        };
+
+        // DOMのロード完了後にアプリを初期化するぞ！
+        window.addEventListener('DOMContentLoaded', initApp);
+
+    </script>
+</body>
+</html>
