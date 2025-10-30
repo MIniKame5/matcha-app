@@ -3,631 +3,178 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>まっちゃOS - AI拡張機能</title>
-    <!-- Tailwind CSSのロード -->
+    <title>まっちゃOS ランチャー</title>
+    <!-- Tailwind CSSを読み込むぜ！ -->
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Noto+Sans+JP:wght@400;700&display=swap');
+        /* フォント設定：日本語対応のためにNoto Sans JPを使うぜ！ */
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@100..900&display=swap');
         body {
-            font-family: 'Noto Sans JP', 'Inter', sans-serif;
-            margin: 0;
-            padding: 0;
+            font-family: 'Noto Sans JP', sans-serif;
+            background-color: #f7ffe0; /* まっちゃっぽい優しいクリーム色！ */
         }
-        /* Markdown表示用の簡易スタイル */
-        .markdown-body h2 { font-size: 1.5rem; font-weight: bold; margin-top: 1rem; margin-bottom: 0.5rem; }
-        .markdown-body h3 { font-size: 1.25rem; font-weight: bold; margin-top: 1rem; margin-bottom: 0.5rem; }
-        .markdown-body ul { list-style: disc; padding-left: 1.5rem; margin-top: 0.5rem; margin-bottom: 1rem; }
-        .markdown-body li { margin-bottom: 0.25rem; }
-
-        /* 削除モードの脈動アニメーション - Puni Puni Style! */
-        @keyframes pulse-shake {
-            0%, 100% { transform: scale(1) rotate(0deg); }
-            50% { transform: scale(1.03) rotate(-1deg); }
+        /* アプリのアイコンコンテナにホバー効果を追加 */
+        .app-icon-container {
+            transition: transform 0.15s ease-out, box-shadow 0.15s ease-out;
+            cursor: pointer;
         }
-        .animate-pulse {
-            animation: pulse-shake 1.5s infinite alternate;
+        .app-icon-container:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 4, 0, 0.05);
+        }
+        /* アプリ実行時のコンテナは、画面いっぱいに広がるように設定 */
+        #app-container {
+            width: 100%;
+            height: calc(100% - 56px); /* ヘッダーの高さ (56px) を引く */
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
         }
     </style>
 </head>
-<body>
-    <div id="app-container" class="min-h-screen bg-gray-50 flex flex-col">
-        <!-- Main views will be rendered here -->
+<body class="min-h-screen">
+
+    <!-- メインランチャーUI -->
+    <div id="launcher-view" class="p-4 sm:p-8 max-w-4xl mx-auto">
+        <div class="flex flex-col items-center justify-center pt-8 pb-12">
+            <!-- まっちゃ OS ロゴ -->
+            <div class="text-6xl mb-2">🐢</div>
+            <h1 class="text-4xl font-extrabold text-green-700 tracking-wider">
+                まっちゃアプリ
+            </h1>
+            <p class="text-sm text-gray-600 mt-2">AI拡張機能で、もっと便利に！</p>
+            <p id="user-id-display" class="text-xs text-gray-400 mt-1">ユーザーID: Firebase接続中...</p>
+        </div>
+
+        <!-- メインナビゲーションボタン -->
+        <div class="flex justify-center space-x-4 sm:space-x-6 mb-16">
+            <button id="btn-my-app" onclick="showMyApp()" class="flex-1 max-w-xs flex flex-col items-center justify-center p-4 sm:p-6 bg-green-500 hover:bg-green-600 text-white font-bold rounded-xl shadow-lg transition-colors duration-200">
+                <div class="text-2xl mb-1">◻️</div>
+                <div class="text-lg">マイアプリ</div>
+                <div id="app-count" class="text-xs font-light mt-1">0個インストール済み</div>
+            </button>
+            <button id="btn-store" class="flex-1 max-w-xs flex flex-col items-center justify-center p-4 sm:p-6 bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold rounded-xl shadow-lg transition-colors duration-200" onclick="showStore()">
+                <div class="text-2xl mb-1">🏆</div>
+                <div class="text-lg">まっちゃストア</div>
+                <div class="text-xs font-light mt-1">2種類のアプリ</div>
+            </button>
+        </div>
+
+        <!-- *********** アプリ表示エリア *********** -->
+        <div id="app-area" class="w-full">
+            <h2 id="app-area-title" class="text-2xl font-bold text-gray-800 mb-6 flex justify-between items-center">
+                マイアプリ
+                <!-- app_loader.jsからインポートした関数を呼び出す -->
+                <button onclick="window.clearInstalledApps()" class="text-gray-400 hover:text-red-500 transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 inline-block" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                </button>
+            </h2>
+            
+            <!-- インストール済みアプリの一覧表示エリア -->
+            <div id="installed-apps-list" class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-6 p-4 bg-white rounded-3xl shadow-xl border border-gray-100">
+                <!-- アプリのアイコンがここに動的に挿入されるぜ！ -->
+            </div>
+        </div>
+
+        <!-- *********** アプリストアUI *********** -->
+        <div id="store-view" class="hidden w-full">
+            <h2 class="text-2xl font-bold text-gray-800 mb-6">まっちゃストア</h2>
+            <div id="store-apps-list" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- ストアのアプリカードがここに動的に挿入されるぜ！ -->
+            </div>
+        </div>
     </div>
 
-    <!-- Firebase SDK Imports (永続化と認証のために必須!) -->
+    <!-- *********** アプリ実行コンテナ (ここがアプリが動く場所だ！) *********** -->
+    <div id="app-overlay" class="fixed inset-0 bg-white z-50 transform translate-y-full transition-transform duration-500 ease-in-out">
+        <header class="flex items-center justify-between p-3 bg-gray-50 border-b border-gray-200 shadow-md h-[56px]">
+            <button onclick="closeApp()" class="text-gray-600 hover:text-gray-800 transition-colors p-1 rounded-full hover:bg-gray-100">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
+            </button>
+            <h1 id="app-title-bar" class="text-lg font-bold text-gray-800 truncate">アプリ名</h1>
+            <div class="w-6 h-6"></div> <!-- スペーサー -->
+        </header>
+        <div id="app-container" class="w-full h-full overflow-y-auto">
+            <!-- 起動されたアプリのコンテンツがここに表示されるぜ！ -->
+        </div>
+    </div>
+
+    <!-- *********** JavaScript ロジック (UIとインポート担当) *********** -->
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, setDoc, deleteDoc, onSnapshot, collection } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        // 処理ロジックを分離したapp_loader.jsをインポートするぜ！
+        import { initFirebase, loadInstalledApps, launchApp, installApp, uninstallApp, clearInstalledApps, userId } from './app_loader.js';
 
-        // =========================================================
-        // 1. グローバル定数と状態 (State)
-        // =========================================================
+        // グローバル変数を定義して、アプリ実行時のスクリプトから使えるようにする
+        const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : '';
 
-        const VIEWS = {
-            HOME: 'home',
-            MY_APPS: 'my_apps',
-            STORE: 'store',
-            APP_DETAIL: 'app_detail',
-        };
+        // 外部から呼び出せるように、windowに処理ロジックの関数を割り当てるぜ！
+        window.launchApp = launchApp;
+        window.installApp = installApp;
+        window.uninstallApp = uninstallApp;
+        window.clearInstalledApps = clearInstalledApps;
+
+
+        // ********** UI切り替えロジック (HTML側で管理する) **********
         
-        let currentView = VIEWS.HOME;
-        let activeAppId = null;
+        const launcher = document.getElementById('launcher-view');
+        const storeView = document.getElementById('store-view');
+        const appArea = document.getElementById('app-area');
         
-        // アプリの状態 (Firestoreからリアルタイムで更新されるよ！)
-        window.installedApps = {}; 
-        let isDeletionMode = false; // ゴミ箱モードのフラグ
-
-        // Firebase関連のグローバル変数
-        let app = null;
-        let db = null;
-        let auth = null;
-        let userId = 'loading'; // 認証が完了するまで'loading'
-        let isAuthReady = false; // 認証完了フラグ
-        
-        // Firebase設定のロード
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
-        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
-
-        // =========================================================
-        // 2. Firebase初期化と認証
-        // =========================================================
-        
-        async function initializeFirebase() {
-            try {
-                if (Object.keys(firebaseConfig).length === 0) {
-                    console.error("Firebaseの設定が読み込めませんでした。ストレージ機能は利用できません。");
-                    return;
-                }
-                
-                app = initializeApp(firebaseConfig);
-                db = getFirestore(app);
-                auth = getAuth(app);
-                
-                await new Promise((resolve, reject) => {
-                    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-                        unsubscribe(); 
-                        if (user) {
-                            userId = user.uid;
-                        } else if (initialAuthToken) {
-                            await signInWithCustomToken(auth, initialAuthToken);
-                            userId = auth.currentUser.uid;
-                        } else {
-                            await signInAnonymously(auth);
-                            userId = auth.currentUser.uid;
-                        }
-                        isAuthReady = true;
-                        resolve();
-                    }, reject);
-                });
-
-                setupInstalledAppsListener();
-
-            } catch (error) {
-                console.error("Firebase初期化または認証中にエラー:", error);
-                isAuthReady = true; 
-            }
-        }
-
-        // =========================================================
-        // 3. Firestore (アプリの永続化ロジック)
-        // =========================================================
-
-        function getInstalledAppsCollectionPath() {
-            return `artifacts/${appId}/users/${userId}/installedApps`;
-        }
-        
-        function setupInstalledAppsListener() {
-            if (!db || !isAuthReady) {
-                return;
-            }
-
-            const appsColRef = collection(db, getInstalledAppsCollectionPath());
-            
-            onSnapshot(appsColRef, (snapshot) => {
-                const newApps = {};
-                snapshot.forEach(doc => {
-                    const data = doc.data();
-                    newApps[doc.id] = { ...data, id: doc.id };
-                });
-
-                window.installedApps = newApps;
-                
-                if (currentView === VIEWS.MY_APPS || currentView === VIEWS.STORE) {
-                    showView(currentView);
-                }
-            }, (error) => {
-                console.error("Firestoreリスナーエラー:", error);
-            });
-        }
-        
-        window.installApp = async function(appId) {
-            if (!db || !isAuthReady) {
-                showMessageBox('データベースが準備できていません...😢', 'bg-red-500');
-                return;
-            }
-
-            // window.APPS_DATAは app_loader.js が準備する
-            const appData = window.APPS_DATA[appId]; 
-            if (!appData) {
-                showMessageBox('そのアプリは見つからないよ！', 'bg-red-500');
-                return;
-            }
-
-            try {
-                const appDocRef = doc(db, getInstalledAppsCollectionPath(), appId);
-                await setDoc(appDocRef, {
-                    name: appData.name,
-                    icon: appData.icon,
-                    installedAt: new Date().toISOString()
-                });
-                showMessageBox(`${appData.name} をインストールしたよ！🎉`, 'bg-green-500');
-            } catch (error) {
-                console.error("アプリのインストールに失敗:", error);
-                showMessageBox('インストールに失敗しちゃった...もう一度試してみて！', 'bg-red-500');
-            }
+        // ストアを表示する
+        window.showStore = () => {
+            storeView.classList.remove('hidden');
+            appArea.classList.add('hidden');
+            document.getElementById('app-area-title').textContent = 'まっちゃストア';
         };
 
-        window.uninstallApp = async function(appId) {
-            if (!db || !isAuthReady) {
-                showMessageBox('データベースが準備できていません...😢', 'bg-red-500');
-                return;
-            }
-            
-            const appData = window.APPS_DATA[appId];
-            const appName = appData ? appData.name : 'このアプリ';
-
-            showConfirmModal(`本当に ${appName} をアンインストールする？`, 
-                async () => {
-                    try {
-                        const appDocRef = doc(db, getInstalledAppsCollectionPath(), appId);
-                        await deleteDoc(appDocRef);
-                        showMessageBox(`${appName} をアンインストールしたよ！👋`, 'bg-purple-500');
-                        window.toggleDeletionMode();
-                    } catch (error) {
-                        console.error("アプリのアンインストールに失敗:", error);
-                        showMessageBox('アンインストールに失敗しちゃった...もう一度試してみて！', 'bg-red-500');
-                    }
-                },
-                () => {}
-            );
-        };
-        
-        // =========================================================
-        // 4. UI/ビュー管理
-        // =========================================================
-        
-        window.showView = function(viewName, appId = null) {
-            currentView = viewName;
-            activeAppId = appId;
-            const container = document.getElementById('app-container');
-
-            let html = '';
-            switch (viewName) {
-                case VIEWS.HOME:
-                    html = renderHome();
-                    isDeletionMode = false;
-                    break;
-                case VIEWS.MY_APPS:
-                    html = renderMyApps();
-                    break;
-                case VIEWS.STORE:
-                    html = renderAppStore();
-                    isDeletionMode = false;
-                    break;
-                case VIEWS.APP_DETAIL:
-                    // 修正: window.APPS_DATA[appId].renderFunction を呼び出す
-                    html = window.APPS_DATA[appId]?.renderFunction ? window.APPS_DATA[appId].renderFunction() : renderNotFound();
-                    isDeletionMode = false;
-                    break;
-                default:
-                    html = renderNotFound();
-            }
-
-            container.innerHTML = html;
-            lucide.createIcons(); 
-            // 修正: window.APPS_DATA[appId].onLaunch を呼び出す
-            if (viewName === VIEWS.APP_DETAIL && window.APPS_DATA[appId]?.onLaunch) {
-                 window.APPS_DATA[appId].onLaunch();
-            }
+        // マイアプリを表示する
+        window.showMyApp = () => {
+            storeView.classList.add('hidden');
+            appArea.classList.remove('hidden');
+            document.getElementById('app-area-title').textContent = 'マイアプリ';
+            // loadInstalledApps(); // onSnapshotで自動更新されるはず
         };
 
-        // =========================================================
-        // 5. UI: モーダル・メッセージボックス
-        // =========================================================
-        
-        window.showMessageBox = function(message, bgColorClass = 'bg-gray-700') {
-            const container = document.getElementById('app-container');
-            let messageBox = document.getElementById('custom-message-box');
-
-            if (!messageBox) {
-                messageBox = document.createElement('div');
-                messageBox.id = 'custom-message-box';
-                messageBox.className = 'fixed bottom-4 left-1/2 transform -translate-x-1/2 z-50 transition-all duration-300 ease-out opacity-0 translate-y-4';
-                container.appendChild(messageBox);
-            }
-
-            messageBox.innerHTML = `
-                <div class="px-5 py-3 rounded-xl text-white font-semibold shadow-2xl ${bgColorClass} flex items-center space-x-2">
-                    <i data-lucide="info" class="w-5 h-5"></i>
-                    <span>${message}</span>
-                </div>
-            `;
-            lucide.createIcons();
-
-            setTimeout(() => {
-                messageBox.classList.remove('opacity-0', 'translate-y-4');
-                messageBox.classList.add('opacity-100', 'translate-y-0');
-            }, 50);
-
-            setTimeout(() => {
-                messageBox.classList.remove('opacity-100', 'translate-y-0');
-                messageBox.classList.add('opacity-0', 'translate-y-4');
-            }, 3000);
-        };
-
-        window.showConfirmModal = function(message, onConfirm, onCancel) {
-            const modalId = 'custom-confirm-modal';
-            let modal = document.getElementById(modalId);
-            const container = document.getElementById('app-container');
-
-            if (modal) {
-                modal.remove();
-            }
-
-            modal = document.createElement('div');
-            modal.id = modalId;
-            modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 transition-opacity duration-300';
-            modal.style.opacity = '0'; 
+        // アプリ実行オーバーレイを開く (app_loaderから呼ばれる)
+        window.openAppOverlay = (appName) => {
+            const appOverlay = document.getElementById('app-overlay');
+            const appTitleBar = document.getElementById('app-title-bar');
+            const appContainer = document.getElementById('app-container');
             
-            modal.innerHTML = `
-                <div class="bg-white p-6 rounded-2xl shadow-2xl w-80 max-w-[90%] transform transition-transform duration-300 scale-95">
-                    <p class="text-lg font-semibold text-gray-800 mb-6 text-center">${message}</p>
-                    <div class="flex justify-around space-x-4">
-                        <button id="modal-cancel-btn" class="flex-1 py-2 px-4 bg-gray-300 text-gray-800 font-bold rounded-xl hover:bg-gray-400 transition">
-                            キャンセル
-                        </button>
-                        <button id="modal-confirm-btn" class="flex-1 py-2 px-4 bg-red-500 text-white font-bold rounded-xl hover:bg-red-600 transition">
-                            削除
-                        </button>
-                    </div>
-                </div>
-            `;
-
-            container.appendChild(modal);
+            if (appTitleBar) appTitleBar.textContent = appName;
+            if (appOverlay) appOverlay.style.transform = 'translateY(0)';
             
-            setTimeout(() => {
-                modal.style.opacity = '1';
-                modal.querySelector('div').classList.remove('scale-95');
-                modal.querySelector('div').classList.add('scale-100');
-            }, 10);
-
-            const close = () => {
-                modal.style.opacity = '0';
-                modal.querySelector('div').classList.remove('scale-100');
-                modal.querySelector('div').classList.add('scale-95');
-                setTimeout(() => modal.remove(), 300);
-            };
-
-            document.getElementById('modal-confirm-btn').onclick = () => {
-                onConfirm();
-                close();
-            };
-
-            document.getElementById('modal-cancel-btn').onclick = () => {
-                onCancel();
-                close();
-            };
-        };
-
-        // =========================================================
-        // 6. UI: 各ビューのレンダリング
-        // =========================================================
-        
-        window.renderAppStore = function() {
-            const allApps = window.APPS_DATA || {};
-            const installedAppIds = Object.keys(window.installedApps);
-            // 修正: Object.values(allApps) の代わりに Object.keys(allApps) を使ってソート
-            const sortedAppIds = Object.keys(allApps).sort();
-
-            const appCards = sortedAppIds.map(appId => {
-                const app = allApps[appId];
-                const isInstalled = installedAppIds.includes(app.id);
-                
-                const button = isInstalled ? 
-                    `<button onclick="showView(VIEWS.APP_DETAIL, '${app.id}')"
-                        class="mt-4 w-full py-2 bg-green-500 text-white font-bold rounded-lg shadow-md hover:bg-green-600 transition duration-150 transform active:scale-95">
-                        起動する
-                    </button>` :
-                    `<button onclick="installApp('${app.id}')"
-                        class="mt-4 w-full py-2 bg-blue-500 text-white font-bold rounded-lg shadow-md hover:bg-blue-600 transition duration-150 transform active:scale-95">
-                        インストール
-                    </button>`;
-
-                return `
-                    <div class="bg-white p-4 rounded-xl shadow-lg flex flex-col justify-between transform hover:scale-[1.02] transition duration-200 border-2 ${isInstalled ? 'border-green-400' : 'border-gray-200'}">
-                        <div class="flex items-center space-x-3 mb-3">
-                            <span class="text-3xl">${app.icon}</span>
-                            <h3 class="text-xl font-bold text-gray-800">${app.name}</h3>
-                        </div>
-                        <p class="text-sm text-gray-600 flex-grow">${app.description}</p>
-                        ${button}
-                    </div>
-                `;
-            }).join('');
-
-            return `
-                <div class="p-6 pt-10 min-h-screen bg-gray-100">
-                    <div class="flex items-center justify-between mb-8">
-                        <button onclick="showView(VIEWS.HOME)" class="text-gray-600 hover:text-gray-800 transition duration-150 transform active:scale-90">
-                            <i data-lucide="chevron-left" class="w-8 h-8"></i>
-                        </button>
-                        <h1 class="text-3xl font-extrabold text-gray-800 flex-grow text-center pr-8">
-                            🏠 まっちゃストア
-                        </h1>
-                    </div>
-                    
-                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        ${appCards}
-                    </div>
-                    
-                </div>
-            `;
-        };
-        
-        window.renderMyApps = function() {
-            const installedAppIds = Object.keys(window.installedApps);
-            const installedAppList = installedAppIds
-                .map(appId => window.APPS_DATA[appId])
-                .filter(app => app);
-            
-            const appCards = installedAppList.map(app => {
-                const clickAction = isDeletionMode 
-                    ? `uninstallApp('${app.id}')` 
-                    : `showView(VIEWS.APP_DETAIL, '${app.id}')`; 
-                
-                const deletionBadge = isDeletionMode ? `
-                    <div class="absolute top-[-8px] right-[-8px] w-6 h-6 bg-red-500 rounded-full flex items-center justify-center text-white border-2 border-white shadow-lg z-10 animate-pulse">
-                        <i data-lucide="minus" class="w-4 h-4"></i>
-                    </div>
-                ` : '';
-
-                return `
-                    <div onclick="${clickAction}" 
-                         class="relative bg-white p-4 rounded-xl shadow-lg flex flex-col items-center cursor-pointer 
-                                transform transition duration-200 
-                                ${isDeletionMode ? 'animate-pulse border-4 border-red-500' : 'hover:scale-[1.05] border-2 border-transparent hover:border-blue-300 active:scale-95'}">
-                        ${deletionBadge}
-                        <span class="text-5xl mb-2">${app.icon}</span>
-                        <h3 class="text-lg font-semibold text-gray-800 text-center">${app.name}</h3>
-                    </div>
-                `;
-            }).join('');
-            
-            const trashIcon = `
-                <button onclick="toggleDeletionMode()" 
-                    class="p-2 rounded-full transition duration-200 transform active:scale-90
-                           ${isDeletionMode ? 'bg-red-500 text-white shadow-xl' : 'bg-gray-200 text-gray-600 hover:bg-red-100 hover:text-red-500'}">
-                    <i data-lucide="trash-2" class="w-6 h-6"></i>
-                </button>
-            `;
-            
-            const emptyMessage = `
-                <div class="p-10 bg-white rounded-xl shadow-lg border-2 border-dashed border-gray-300 text-center text-gray-500 mt-8">
-                    <i data-lucide="inbox" class="w-10 h-10 mx-auto mb-4"></i>
-                    <p class="text-xl font-bold">アプリがまだインストールされてないよ！</p>
-                    <p class="mt-2">「まっちゃストア」で気に入ったアプリを見つけてインストールしよう！</p>
-                    <button onclick="showView(VIEWS.STORE)" class="mt-4 py-2 px-4 bg-blue-500 text-white font-bold rounded-lg hover:bg-blue-600 transition transform active:scale-95">
-                        ストアへ行く
-                    </button>
-                </div>
-            `;
-            
-            return `
-                <div class="p-6 pt-10 min-h-screen bg-blue-50">
-                    <div class="flex items-center justify-between mb-8">
-                        <button onclick="showView(VIEWS.HOME)" class="text-blue-600 hover:text-blue-800 transition duration-150 transform active:scale-90">
-                            <i data-lucide="chevron-left" class="w-8 h-8"></i>
-                        </button>
-                        <div class="flex items-center flex-grow justify-center -ml-8">
-                            <h1 class="text-3xl font-extrabold text-gray-800 mr-4">
-                                📱 マイアプリ
-                            </h1>
-                            ${trashIcon}
-                        </div>
-                    </div>
-                    
-                    ${installedAppList.length === 0 ? emptyMessage : `
-                        <p class="text-center text-red-600 font-bold mb-6 transition duration-300 h-6">
-                            ${isDeletionMode ? '🚨 削除したいアプリをタップしてね！' : 'タップで起動するよ！'}
+            // ローディング表示
+            if (appContainer) {
+                appContainer.className = 'w-full h-full overflow-y-auto bg-gray-50 flex items-center justify-center';
+                appContainer.innerHTML = `
+                    <div class="flex flex-col items-center justify-center p-10 text-center">
+                        <div class="animate-spin rounded-full h-12 w-12 border-t-4 border-b-4 border-green-500 mb-4"></div>
+                        <p class="text-xl font-bold text-green-600">
+                            ${appName} のファイルを読み込み中だぞ...！
                         </p>
-                        <div class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-6">
-                            ${appCards}
-                        </div>
-                    `}
-                    
-                </div>
-            `;
-        };
-        
-        window.toggleDeletionMode = function() {
-            isDeletionMode = !isDeletionMode;
-            showView(VIEWS.MY_APPS);
-            
-            if (isDeletionMode) {
-                showMessageBox('🗑️ 削除モードON！アプリをタップでアンインストールするよ！', 'bg-red-500');
-            } else {
-                showMessageBox('✅ 削除モードOFF。', 'bg-green-500');
+                    </div>
+                `;
             }
-        };
-
-        function renderHome() {
-            const installedAppIds = Object.keys(window.installedApps);
-            const recentAppList = installedAppIds
-                .map(appId => window.APPS_DATA[appId])
-                .filter(app => app)
-                .slice(0, 8); 
-
-            const appIcons = recentAppList.map(app => `
-                <div onclick="showView(VIEWS.APP_DETAIL, '${app.id}')" 
-                     class="flex flex-col items-center space-y-1 cursor-pointer transform hover:scale-[1.1] transition duration-200 active:scale-95">
-                    <div class="bg-white p-3 rounded-2xl shadow-lg border border-gray-100">
-                        <span class="text-4xl">${app.icon}</span>
-                    </div>
-                    <span class="text-xs text-gray-700 font-medium whitespace-nowrap">${app.name.split(' ')[0]}</span>
-                </div>
-            `).join('');
-
-            return `
-                <div class="p-6 pt-10 min-h-screen bg-yellow-50">
-                    <!-- ヘッダー -->
-                    <div class="text-center mb-10">
-                        <span class="text-5xl">🐢</span>
-                        <h1 class="text-4xl font-extrabold text-green-700 mt-2">まっちゃ OS</h1>
-                        <p class="text-gray-600 mt-1">AI拡張機能で、もっと便利に！</p>
-                        <p class="text-xs text-gray-400 mt-1">ユーザーID: ${userId}</p>
-                    </div>
-
-                    <!-- メインメニュー -->
-                    <div class="grid grid-cols-2 gap-4 max-w-sm mx-auto">
-                        <div onclick="showView(VIEWS.MY_APPS)" 
-                             class="flex flex-col items-center p-6 bg-white rounded-3xl shadow-xl border-b-4 border-blue-500 cursor-pointer transform hover:scale-[1.05] transition duration-200 active:scale-95">
-                            <i data-lucide="layout-grid" class="w-8 h-8 text-blue-500 mb-2"></i>
-                            <span class="text-lg font-bold text-gray-800">マイアプリ</span>
-                            <span class="text-sm text-gray-500">${installedAppIds.length}個インストール済み</span>
-                        </div>
-                        <div onclick="showView(VIEWS.STORE)" 
-                             class="flex flex-col items-center p-6 bg-white rounded-3xl shadow-xl border-b-4 border-green-500 cursor-pointer transform hover:scale-[1.05] transition duration-200 active:scale-95">
-                            <i data-lucide="store" class="w-8 h-8 text-green-500 mb-2"></i>
-                            <span class="text-lg font-bold text-gray-800">まっちゃストア</span>
-                            <span class="text-sm text-gray-500">${Object.keys(window.APPS_DATA || {}).length}種類のアプリ</span>
-                        </div>
-                    </div>
-
-                    <!-- 最近使ったアプリ -->
-                    <div class="mt-12">
-                        <h2 class="text-xl font-bold text-gray-800 mb-4 flex items-center justify-center">
-                            <i data-lucide="star" class="w-5 h-5 text-yellow-500 mr-2"></i>
-                            インストール済みアプリ
-                        </h2>
-                        ${recentAppList.length > 0 ? `
-                            <div class="grid grid-cols-4 gap-4 justify-items-center max-w-lg mx-auto">
-                                ${appIcons}
-                            </div>
-                        ` : `
-                            <p class="text-center text-gray-500 mt-4">まだアプリを使ってないね！ストアへGO！</p>
-                        `}
-                    </div>
-                </div>
-            `;
         }
 
-        function renderNotFound() {
-            return `
-                <div class="p-6 pt-10 min-h-screen bg-red-50 text-center flex flex-col justify-center items-center">
-                    <i data-lucide="bug-off" class="w-16 h-16 text-red-500 mb-4"></i>
-                    <h1 class="text-3xl font-bold text-red-700 mb-2">エラー：アプリが見つかりません</h1>
-                    <p class="text-gray-600 mb-6">指定されたアプリIDは存在しないみたい...😢</p>
-                    <button onclick="showView(VIEWS.MY_APPS)" class="py-2 px-4 bg-red-500 text-white font-bold rounded-lg hover:bg-red-600 transition transform active:scale-95">
-                        マイアプリへ戻る
-                    </button>
-                </div>
-            `;
-        }
-        
-        // =========================================================
-        // 7. ユーティリティ関数
-        // =========================================================
-
-        /**
-         * 指数バックオフ付きのフェッチ関数 (Gemini APIの呼び出しに使用)
-         */
-        window._callFetch = async function(url, payload, maxRetries = 5) {
-            for (let i = 0; i < maxRetries; i++) {
-                try {
-                    const response = await fetch(url, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(payload)
-                    });
-                    
-                    if (response.status === 429 || response.status >= 500) {
-                        throw new Error(`Server error with status: ${response.status}`);
-                    }
-                    
-                    return response; // 成功
-                } catch (error) {
-                    if (i === maxRetries - 1) {
-                        throw error;
-                    }
-                    const delay = Math.pow(2, i) * 1000;
-                    await new Promise(resolve => setTimeout(resolve, delay));
-                }
+        // アプリ実行オーバーレイを閉じる
+        window.closeApp = () => {
+            const appOverlay = document.getElementById('app-overlay');
+            if (appOverlay) {
+                appOverlay.style.transform = 'translateY(100%)';
             }
         };
 
-        /**
-         * 簡易的なMarkdown to HTML変換関数
-         */
-        window.markdownToHtml = function(markdown) {
-            let html = markdown
-                .replace(/### (.*)/g, '<h3 class="text-lg font-bold mt-4 mb-2">$1</h3>') 
-                .replace(/## (.*)/g, '<h2 class="text-xl font-bold mt-5 mb-3">$1</h2>') 
-                .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>') 
-                .replace(/\* (.*)/g, '<li class="ml-4 list-disc text-sm">$1</li>'); 
-            
-            if (html.includes('<li')) {
-                html = `<ul>${html}</ul>`;
-                html = html.replace(/<\/h3><ul>/g, '</h3><ul class="ml-2">');
-                html = html.replace(/<\/h2><ul>/g, '</h2><ul class="ml-2">');
-            }
 
-            html = html.split('\n\n').map(p => {
-                if (p.trim() === '' || p.startsWith('<h') || p.startsWith('<ul>') || p.startsWith('<li') || p.startsWith('<hr')) {
-                    return p;
-                }
-                return `<p class="mb-3">${p}</p>`;
-            }).join('');
-            
-            html = html.replace(/---/g, '<hr class="my-4 border-gray-300">');
-            html = html.replace(/\n/g, '<br>');
-
-            return html;
+        // ********** 初期化 **********
+        window.onload = () => {
+            // Firebase初期化をapp_loaderに任せる！
+            initFirebase(firebaseConfig, initialAuthToken);
+            // 初期表示はマイアプリ画面
+            showMyApp();
         };
-
-        // =========================================================
-        // 8. 初期ロード
-        // =========================================================
-
-        window.VIEWS = VIEWS; 
-        window.isDeletionMode = isDeletionMode; 
-        window.toggleDeletionMode = window.toggleDeletionMode; 
-
-        // ページロード時に実行
-        document.addEventListener('DOMContentLoaded', async () => {
-            // アプリローダーが完了するのを待つためのPromiseを作成
-            const appLoaderPromise = new Promise(resolve => {
-                window.resolveAppLoader = resolve;
-            });
-
-            // Firebaseの初期化と認証を待つ
-            await initializeFirebase(); 
-            
-            // アプリのロードが完了するまで待機
-            await appLoaderPromise;
-
-            // 認証とアプリロードが完了したらホーム画面を表示
-            showView(VIEWS.HOME);
-        });
 
     </script>
-    
-    <!-- Lucide IconsのCDN -->
-    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
-    
-    <!-- 外部アプリローダー (apps.jsの代わりにこれを読み込むよ！) -->
-    <!-- app_loader.jsが apps/ フォルダ内のアプリを読み込んでくれる -->
-    <script src="app_loader.js"></script> 
 </body>
 </html>
