@@ -11,6 +11,7 @@ let app;
 let db;
 let auth;
 let userId = 'loading';
+// __app_idはランタイムから提供される
 const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
 let isAuthReady = false;
 
@@ -28,7 +29,7 @@ const STORE_APPS = [
         description: '冷蔵庫の食材からAIが最適な献立を提案するよ。今日の晩ご飯は何にする？',
         icon: '🍱',
         color: 'bg-yellow-500',
-        isInstalled: false,
+        isInstalled: false, 
     },
     {
         id: 'weather_portal',
@@ -76,14 +77,15 @@ async function initFirebase(firebaseConfig, initialAuthToken) {
             isAuthReady = true;
             userId = crypto.randomUUID();
             if (userIdDisplay) userIdDisplay.textContent = `ユーザーID: ${userId} (ローカル)`;
-            loadInstalledApps();
-            return;
+            loadInstalledApps(); 
+            return; 
         }
 
         // 認証ロジック
         if (initialAuthToken) {
             await signInWithCustomToken(auth, initialAuthToken);
         } else {
+            // トークンがない場合は匿名認証を試みる
             await signInAnonymously(auth);
         }
 
@@ -94,7 +96,8 @@ async function initFirebase(firebaseConfig, initialAuthToken) {
                 if (userIdDisplay) userIdDisplay.textContent = `ユーザーID: ${userId}`;
                 console.log(`👤 認証完了！UserID: ${userId}`);
             } else {
-                userId = crypto.randomUUID();
+                // 認証失敗時、または匿名ユーザーの場合のフォールバック
+                userId = crypto.randomUUID(); 
                 if (userIdDisplay) userIdDisplay.textContent = `ユーザーID: ${userId} (匿名/一時)`;
                 console.log(`⚠️ 匿名ユーザーとして実行中。一時UserID: ${userId}`);
             }
@@ -103,6 +106,7 @@ async function initFirebase(firebaseConfig, initialAuthToken) {
 
     } catch (e) {
         console.error("🚨 Firebase初期化または認証中にエラーが発生したぞ！", e);
+        // エラー発生時も最低限の起動状態にする
         isAuthReady = true;
         userId = crypto.randomUUID();
         if (userIdDisplay) userIdDisplay.textContent = `ユーザーID: ERROR`;
@@ -116,35 +120,39 @@ async function initFirebase(firebaseConfig, initialAuthToken) {
 /**
  * アプリをインストールするぞ！
  */
-async function installApp(appId) {
-    console.log(`📥 アプリインストール開始: ${appId}`);
-    if (!db || !isAuthReady) {
-        alertMessage("🚨 システムがまだ準備できてないか、Firebaseが利用できないぞ！", 'error');
+async function installApp(id) {
+    console.log(`[DEBUG] 📥 installApp関数が呼ばれたぞ: ID=${id}`); // 呼び出し確認用ログ
+    
+    // 認証状態とDB接続のチェックを強化
+    if (!db || !isAuthReady || userId === 'loading') {
+        alertMessage("🚨 システムがまだ準備できてないか、Firebaseが利用できないぞ！認証状態を確認してくれ。", 'error');
         return;
     }
-
-    const storeApp = STORE_APPS.find(a => a.id === appId);
+    
+    // アプリIDを確実に取り出す
+    const appIdToInstall = id;
+    const storeApp = STORE_APPS.find(a => a.id === appIdToInstall);
     
     if (!storeApp) {
-         console.error(`🚨 インストールしようとしたアプリID (${appId}) がSTORE_APPSに見つからないぞ！`);
-         alertMessage(`❌ インストールエラー: アプリデータが見つからない... (${appId})`, 'error');
+         console.error(`🚨 インストールしようとしたアプリID (${appIdToInstall}) がSTORE_APPSに見つからないぞ！`);
+         alertMessage(`❌ インストールエラー: アプリデータが見つからない... (${appIdToInstall})`, 'error');
          return;
     }
 
     try {
-        // パス: /artifacts/{appId}/users/{userId}/installed_apps/{appId}
-        const appDocRef = doc(db, 'artifacts', appId, 'users', userId, 'installed_apps', appId);
+        // パス: /artifacts/{canvasAppId}/users/{userId}/installed_apps/{appIdToInstall}
+        const appDocRef = doc(db, 'artifacts', appId, 'users', userId, 'installed_apps', appIdToInstall);
 
-        await setDoc(appDocRef, {
+        await setDoc(appDocRef, { 
             installedAt: new Date(),
-            app_name: storeApp.app_name,
+            app_name: storeApp.app_name, 
             icon: storeApp.icon,
             color: storeApp.color,
-            appId: appId
+            appId: appIdToInstall
         });
         
-        alertMessage(`✅ ${appId} をインストールしたぜ！`, 'success');
-        showMyApp(); // マイアプリ画面に戻る
+        alertMessage(`✅ ${storeApp.name} をインストールしたぜ！`, 'success');
+        showMyApp(); // マイアプリ画面に戻る (onSnapshotがUIを更新するはずだが、念のため)
     } catch (e) {
         console.error(`🚨 アプリのインストールに失敗したぞ！(Firestoreエラー): ${e.code || '不明'}`, e);
         alertMessage(`❌ インストールに失敗した... (Firestore/パーミッションエラーかも): ${e.message}`, 'error');
@@ -154,17 +162,21 @@ async function installApp(appId) {
 /**
  * アプリをアンインストールするぜ！
  */
-async function uninstallApp(appId) {
-    console.log(`📤 アプリアンインストール: ${appId}`);
-    if (!db || !isAuthReady) {
+async function uninstallApp(id) {
+    console.log(`[DEBUG] 📤 uninstallApp関数が呼ばれたぞ: ID=${id}`); // 呼び出し確認用ログ
+    
+    if (!db || !isAuthReady || userId === 'loading') {
         alertMessage("🚨 まだシステムが準備できてないか、Firebaseが利用できないぞ！", 'error');
         return;
     }
+    
+    const appIdToUninstall = id;
+    const storeApp = STORE_APPS.find(a => a.id === appIdToUninstall);
 
     try {
-        const appDocRef = doc(db, 'artifacts', appId, 'users', userId, 'installed_apps', appId);
+        const appDocRef = doc(db, 'artifacts', appId, 'users', userId, 'installed_apps', appIdToUninstall);
         await deleteDoc(appDocRef);
-        alertMessage(`🗑️ ${appId} をアンインストールしたぜ！`, 'success');
+        alertMessage(`🗑️ ${storeApp ? storeApp.name : appIdToUninstall} をアンインストールしたぜ！`, 'success');
         // onSnapshotが自動的にUIを更新
     } catch (e) {
          console.error("🚨 アプリのアンインストールに失敗したぞ！", e);
@@ -186,6 +198,7 @@ function loadInstalledApps() {
     }
     
     try {
+        // パス: /artifacts/{canvasAppId}/users/{userId}/installed_apps
         const q = collection(db, 'artifacts', appId, 'users', userId, 'installed_apps');
         
         // リアルタイムリスナー
@@ -201,7 +214,7 @@ function loadInstalledApps() {
                 if (storeApp) {
                     installedApps.push({
                         ...storeApp,
-                        app_name: data.app_name || storeApp.app_name,
+                        app_name: data.app_name || storeApp.app_name, 
                         icon: data.icon || storeApp.icon,
                         color: data.color || storeApp.color,
                         isInstalled: true,
@@ -288,6 +301,11 @@ function renderStoreApps() {
         const card = document.createElement('div');
         card.className = 'bg-white rounded-xl shadow-lg p-5 flex flex-col transition-shadow duration-300 hover:shadow-xl border border-gray-200';
         
+        // 修正ポイント: onclick属性は動的に生成されるため、関数が確実にwindowスコープに存在するよう明示的に呼び出す。
+        const buttonAction = isInstalled 
+            ? `window.uninstallApp('${storeApp.id}')` 
+            : `window.installApp('${storeApp.id}')`;
+
         card.innerHTML = `
             <div class="flex items-start mb-4">
                 <div class="text-4xl mr-4">${storeApp.icon}</div>
@@ -302,7 +320,7 @@ function renderStoreApps() {
             <div class="mt-auto">
                 <button 
                     class="w-full px-4 py-2 text-white font-bold rounded-lg transition-colors duration-200 ${isInstalled ? 'bg-red-400 hover:bg-red-500' : 'bg-blue-500 hover:bg-blue-600'}"
-                    onclick="${isInstalled ? `window.uninstallApp('${storeApp.id}')` : `window.installApp('${storeApp.id}')`}"
+                    onclick="${buttonAction}"
                 >
                     ${isInstalled ? 'アンインストール' : 'インストール'}
                 </button>
@@ -320,7 +338,7 @@ async function launchApp(appId, appName) {
     console.log(`🐢 アプリ起動リクエスト: ID=${appId}, 名前=${appName} - 起動ロジックスタート！`);
     
     // HTML側で定義されているUI操作関数を呼び出す
-    window.openAppOverlay(appName);
+    window.openAppOverlay(appName); 
     const appContainer = document.getElementById('app-container');
 
     try {
@@ -339,20 +357,23 @@ async function launchApp(appId, appName) {
             const parser = new DOMParser();
             const doc = parser.parseFromString(appHtmlContent, 'text/html');
             
+            // アプリのコンテンツをセット
             const appContent = doc.body.innerHTML;
             appContainer.innerHTML = appContent;
 
-            // 重要なグローバル変数をウィンドウに追加
-            window.__app_id = appId;
-            // NOTE: firebaseConfigやtokenはHTML側で管理するが、アプリ側にも渡す
-            
             // スクリプトの再実行
+            // body内の全てのスクリプトタグを探し、新しい要素として追加し直すことで実行させる
             doc.querySelectorAll('script').forEach(oldScript => {
                 const newScript = document.createElement('script');
-                if (oldScript.type) newScript.type = oldScript.type;
-                if (oldScript.src) newScript.src = oldScript.src;
+                // type属性がある場合はコピー (例: type="module")
+                if (oldScript.type) newScript.type = oldScript.type; 
+                // srcがある場合はコピー
+                if (oldScript.src) newScript.src = oldScript.src; 
+                // インラインコードがある場合はコピー
                 if (oldScript.textContent) newScript.textContent = oldScript.textContent;
-                appContainer.appendChild(newScript);
+                
+                // appContainerに新しいスクリプト要素を追加し、実行させる
+                appContainer.appendChild(newScript); 
             });
         }
 
@@ -380,8 +401,19 @@ async function launchApp(appId, appName) {
  * カスタムアラートメッセージを表示する関数
  */
 function alertMessage(message, type = 'info') {
-    // alert()は使えないから、メッセージをコンソールに出力する
+    // alert()は使えないから、メッセージをコンソールに出力するぜ！
     console.log(`[メッセージ: ${type.toUpperCase()}] ${message}`);
+    
+    // UIとしてメッセージを表示する場合（簡易版）
+    const msgDiv = document.createElement('div');
+    msgDiv.textContent = message;
+    msgDiv.className = `fixed bottom-4 right-4 p-3 rounded-lg shadow-xl text-white z-[100] transition-opacity duration-300 ${type === 'error' ? 'bg-red-600' : (type === 'success' ? 'bg-green-600' : 'bg-blue-600')}`;
+    document.body.appendChild(msgDiv);
+    
+    setTimeout(() => {
+        msgDiv.style.opacity = '0';
+        setTimeout(() => msgDiv.remove(), 300);
+    }, 3000);
 }
 
 /**
@@ -393,6 +425,7 @@ async function clearInstalledApps() {
         return;
     }
 
+    // ユーザーに確認を促すUI（ここでは簡易的に）
     console.log("⚠️ 確認: 全てのインストール済みアプリを削除するよ！続行...");
     
     try {
