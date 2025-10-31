@@ -7,26 +7,24 @@ import { getFirestore, doc, setDoc, onSnapshot, collection, query, getDocs, dele
 setLogLevel('Debug');
 
 // グローバル変数（Firebaseインスタンスは外部で管理する）
-let app;
-let db;
-let auth;
-let userId = 'loading';
+let app = null;
+let db = null; 
+let auth = null;
+let userId = 'loading'; // ユーザーIDは初期化完了まで'loading'
 // __app_idはランタイムから提供される
 const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-let isAuthReady = false;
+let isAuthReady = false; // 認証プロセスが完了したかどうかを示すフラグ
 
 // 外部から利用できるようにエクスポート
-// NOTE: launchApp, uninstallApp, installApp は window.に割り当ててHTMLから直接呼ぶ
 export { initFirebase, loadInstalledApps, launchApp, installApp, uninstallApp, clearInstalledApps, renderStoreApps, userId };
 
 
-// ********** アプリのデータ定義 **********
-// ストアにある全てのアプリの定義だぞ！
+// ********** アプリのデータ定義 (省略) **********
 const STORE_APPS = [
     {
         id: 'meal_planner',
         name: '献立プランナー 🍽️',
-        app_name: '献立プランナー', // アイコンの下の短い名前
+        app_name: '献立プランナー',
         description: '冷蔵庫の食材からAIが最適な献立を提案するよ。今日の晩ご飯は何にする？',
         icon: '🍱',
         color: 'bg-yellow-500',
@@ -52,66 +50,77 @@ const STORE_APPS = [
     }
 ];
 
-let installedApps = []; // 実際にユーザーがインストールしているアプリのリスト
+let installedApps = []; 
 // ***************************************************************
 
 
-// ********** Firebase初期化と認証 **********
+// ********** Firebase初期化と認証 (接続エラー時のフィードバックを改善) **********
 
 /**
  * Firebaseの初期化と認証を行うぜ！
- * @param {object} firebaseConfig - Firebase設定オブジェクト
- * @param {string} initialAuthToken - カスタム認証トークン
  */
 async function initFirebase(firebaseConfig, initialAuthToken) {
     const userIdDisplay = document.getElementById('user-id-display');
     if (userIdDisplay) userIdDisplay.textContent = `ユーザーID: 認証中...`;
+    
+    // Firebase設定が空かどうかチェック
+    const isConfigEmpty = !firebaseConfig || Object.keys(firebaseConfig).length === 0;
 
+    if (isConfigEmpty) {
+        // Firebase設定がない場合のローカルデータモードに強制移行
+        console.error("🚨 Firebase設定が見つからないか空だぞ！ローカルデータモードで実行するぞ。");
+        db = null; // Firestoreは使用しない
+        isAuthReady = true;
+        userId = crypto.randomUUID();
+        if (userIdDisplay) userIdDisplay.innerHTML = `ユーザーID: <span class="font-bold text-red-500">ローカル (${userId.substring(0, 6)}...)</span>`;
+        alertMessage("⚠️ Firebase設定がないため、アプリはローカルモードで実行中。データは保存されないぞ！", 'error');
+        loadInstalledApps(); // 認証完了フラグが立った後、空のデータでアプリをロード
+        return; // これ以上処理を進めない
+    }
+
+    // 設定がある場合はFirebase接続を試みる
     try {
-        if (Object.keys(firebaseConfig).length > 0) {
-            app = initializeApp(firebaseConfig);
-            db = getFirestore(app);
-            auth = getAuth(app);
-            console.log("✅ Firebaseサービスを初期化したぜ！");
-        } else {
-            console.error("🚨 Firebase設定が見つからない！ローカルデータモードで実行するぞ。");
-            isAuthReady = true;
-            userId = crypto.randomUUID();
-            if (userIdDisplay) userIdDisplay.textContent = `ユーザーID: ${userId} (ローカル)`;
-            loadInstalledApps(); 
-            return; 
-        }
+        // 1. Firebaseサービスの初期化
+        app = initializeApp(firebaseConfig);
+        db = getFirestore(app);
+        auth = getAuth(app);
+        console.log("✅ Firebaseサービスを初期化したぜ！DB接続OK。");
 
-        // 認証ロジック
+        // 2. 認証処理
         if (initialAuthToken) {
+            // カスタムトークンでサインイン
             await signInWithCustomToken(auth, initialAuthToken);
         } else {
             // トークンがない場合は匿名認証を試みる
             await signInAnonymously(auth);
         }
-
+        
+        // 3. 認証状態の監視 (これが完了を待つメインの処理)
         onAuthStateChanged(auth, (user) => {
-            isAuthReady = true;
+            isAuthReady = true; // 認証フロー完了
             if (user) {
                 userId = user.uid;
                 if (userIdDisplay) userIdDisplay.textContent = `ユーザーID: ${userId}`;
                 console.log(`👤 認証完了！UserID: ${userId}`);
             } else {
-                // 認証失敗時、または匿名ユーザーの場合のフォールバック
+                // 認証失敗時、または匿名ユーザーの場合
                 userId = crypto.randomUUID(); 
-                if (userIdDisplay) userIdDisplay.textContent = `ユーザーID: ${userId} (匿名/一時)`;
-                console.log(`⚠️ 匿名ユーザーとして実行中。一時UserID: ${userId}`);
+                if (userIdDisplay) userIdDisplay.textContent = `ユーザーID: ${userId} (一時)`;
+                console.log(`⚠️ 匿名/一時ユーザーとして実行中。UserID: ${userId}`);
             }
             loadInstalledApps(); // 認証完了後にアプリリストをロード
         });
 
     } catch (e) {
-        console.error("🚨 Firebase初期化または認証中にエラーが発生したぞ！", e);
-        // エラー発生時も最低限の起動状態にする
+        // 4. 初期化または認証中にエラーが発生した場合
+        console.error("🚨 Firebase初期化または認証中に致命的なエラーが発生したぞ！", e);
+        // エラー発生時もアプリがハングしないように完了状態にする
+        db = null; // Firestoreは使用しない
         isAuthReady = true;
-        userId = crypto.randomUUID();
-        if (userIdDisplay) userIdDisplay.textContent = `ユーザーID: ERROR`;
-        loadInstalledApps();
+        userId = 'ERROR-' + crypto.randomUUID();
+        if (userIdDisplay) userIdDisplay.innerHTML = `ユーザーID: <span class="font-bold text-red-700">接続エラー!</span>`;
+        alertMessage(`🚨 Firebase接続エラー: ${e.message}。ローカルモードで続行するぞ。`, 'error');
+        loadInstalledApps(); // ローカルモードとして処理を継続
     }
 }
 
@@ -122,26 +131,26 @@ async function initFirebase(firebaseConfig, initialAuthToken) {
  * アプリをインストールするぞ！
  */
 async function installApp(id) {
-    console.log(`[DEBUG] 📥 installApp関数が呼ばれたぞ: ID=${id}`); // 呼び出し確認用ログ
-    
-    // 認証状態とDB接続のチェックを強化
-    if (!db || !isAuthReady || userId === 'loading') {
-        alertMessage("🚨 システムがまだ準備できてないか、Firebaseが利用できないぞ！認証状態を確認してくれ。", 'error');
+    // 【堅牢性チェック】dbが初期化されているか、認証が完了しているか確認
+    if (!db) {
+        alertMessage("🚨 現在ローカルモードで実行中。インストールはできないぞ！", 'error');
+        return;
+    }
+    if (!isAuthReady || userId === 'loading') {
+        alertMessage("🚨 システムがまだ認証プロセス中だ。少し待ってね！", 'error');
         return;
     }
     
-    // アプリIDを確実に取り出す
     const appIdToInstall = id;
     const storeApp = STORE_APPS.find(a => a.id === appIdToInstall);
     
     if (!storeApp) {
-         console.error(`🚨 インストールしようとしたアプリID (${appIdToInstall}) がSTORE_APPSに見つからないぞ！`);
-         alertMessage(`❌ インストールエラー: アプリデータが見つからない... (${appIdToInstall})`, 'error');
+         console.error(`🚨 インストールしようとしたアプリID (${appIdToInstall}) がストアに見つからないぞ！`);
+         alertMessage(`❌ インストールエラー: アプリデータが見つからない...`, 'error');
          return;
     }
 
     try {
-        // パス: /artifacts/{canvasAppId}/users/{userId}/installed_apps/{appIdToInstall}
         const appDocRef = doc(db, 'artifacts', appId, 'users', userId, 'installed_apps', appIdToInstall);
 
         await setDoc(appDocRef, { 
@@ -153,10 +162,15 @@ async function installApp(id) {
         });
         
         alertMessage(`✅ ${storeApp.name} をインストールしたぜ！`, 'success');
-        window.showMyApp(); // マイアプリ画面に戻る (onSnapshotがUIを更新するはずだが、念のため)
+        window.showMyApp(); 
     } catch (e) {
+        // Firestoreのエラーコードも確認して、より具体的なフィードバックを出す
+        const errorMessage = e.code === 'permission-denied' 
+            ? '権限がないためインストールできないぞ！(セキュリティルール確認)' 
+            : e.message;
+
         console.error(`🚨 アプリのインストールに失敗したぞ！(Firestoreエラー): ${e.code || '不明'}`, e);
-        alertMessage(`❌ インストールに失敗した... (Firestore/パーミッションエラーかも): ${e.message}`, 'error');
+        alertMessage(`❌ インストールに失敗した...: ${errorMessage}`, 'error');
     }
 }
 
@@ -164,10 +178,13 @@ async function installApp(id) {
  * アプリをアンインストールするぜ！
  */
 async function uninstallApp(id) {
-    console.log(`[DEBUG] 📤 uninstallApp関数が呼ばれたぞ: ID=${id}`); // 呼び出し確認用ログ
-    
-    if (!db || !isAuthReady || userId === 'loading') {
-        alertMessage("🚨 まだシステムが準備できてないか、Firebaseが利用できないぞ！", 'error');
+    // 【堅牢性チェック】
+    if (!db) {
+        alertMessage("🚨 現在ローカルモードで実行中。アンインストール操作は不要だぞ！", 'error');
+        return;
+    }
+    if (!isAuthReady || userId === 'loading') {
+        alertMessage("🚨 システムがまだ認証プロセス中だ。少し待ってね！", 'error');
         return;
     }
     
@@ -178,7 +195,6 @@ async function uninstallApp(id) {
         const appDocRef = doc(db, 'artifacts', appId, 'users', userId, 'installed_apps', appIdToUninstall);
         await deleteDoc(appDocRef);
         alertMessage(`🗑️ ${storeApp ? storeApp.name : appIdToUninstall} をアンインストールしたぜ！`, 'success');
-        // onSnapshotが自動的にUIを更新
     } catch (e) {
          console.error("🚨 アプリのアンインストールに失敗したぞ！", e);
         alertMessage(`❌ アプリのアンインストールに失敗した...: ${e.message}`, 'error');
@@ -188,18 +204,18 @@ async function uninstallApp(id) {
 
 /**
  * インストール済みアプリのリストをFirestoreからロードしてUIに表示するぜ！
- * onSnapshotでリアルタイム監視する！
  */
 function loadInstalledApps() {
-    if (!db || !isAuthReady) {
+    // 【堅牢性チェック】dbが未接続の場合はローカル空リストで続行
+    if (!db) {
          installedApps = [];
          renderInstalledApps();
          renderStoreApps();
+         console.log("⚠️ DBが未接続のため、インストール済みアプリは空のリストとして扱われるぞ。");
         return;
     }
     
     try {
-        // パス: /artifacts/{canvasAppId}/users/{userId}/installed_apps
         const q = collection(db, 'artifacts', appId, 'users', userId, 'installed_apps');
         
         // リアルタイムリスナー
@@ -219,7 +235,7 @@ function loadInstalledApps() {
                         icon: data.icon || storeApp.icon,
                         color: data.color || storeApp.color,
                         isInstalled: true,
-                        // 起動アクションをセット (HTML側で呼び出し可能にする)
+                        // 起動アクションをセット 
                         action: () => launchApp(storeApp.id)
                     });
                 }
@@ -230,7 +246,6 @@ function loadInstalledApps() {
             renderStoreApps();
             const appCount = document.getElementById('app-count');
             if(appCount) appCount.textContent = `${installedApps.length}個インストール済み`;
-            console.log(`🖼️ アプリ描画完了。インストール数: ${installedApps.length}`);
         }, (error) => {
             console.error("🚨 onSnapshotリスナーでエラーが発生したぞ！", error);
             alertMessage('❌ アプリリストのリアルタイム監視に失敗した...', 'error');
@@ -244,12 +259,12 @@ function loadInstalledApps() {
 
 
 /**
- * インストール済みアプリをランチャー画面に描画するぞ！
+ * インストール済みアプリをランチャー画面に描画するぞ！ (UI省略)
  */
 function renderInstalledApps() {
     const container = document.getElementById('installed-apps-list');
     if (!container) return;
-
+    // ... (UI描画ロジックの本体は省略)
     container.innerHTML = ''; // 一旦クリア
     
     if (installedApps.length === 0) {
@@ -272,7 +287,6 @@ function renderInstalledApps() {
     installedApps.forEach(app => {
         const appIcon = document.createElement('div');
         appIcon.className = 'app-icon-container flex flex-col items-center p-2';
-        // 修正: 起動は launchApp を呼び出す
         appIcon.setAttribute('onclick', `window.launchApp('${app.id}')`);
         
         appIcon.innerHTML = `
@@ -288,7 +302,7 @@ function renderInstalledApps() {
 }
 
 /**
- * ストア画面にアプリカードを描画するぞ！
+ * ストア画面にアプリカードを描画するぞ！ (UI省略)
  */
 function renderStoreApps() {
     const container = document.getElementById('store-apps-list');
@@ -302,10 +316,18 @@ function renderStoreApps() {
         const card = document.createElement('div');
         card.className = 'bg-white rounded-xl shadow-lg p-5 flex flex-col transition-shadow duration-300 hover:shadow-xl border border-gray-200';
         
-        // 修正ポイント: onclick属性は動的に生成されるため、関数が確実にwindowスコープに存在するよう明示的に呼び出す。
-        const buttonAction = isInstalled 
-            ? `window.uninstallApp('${storeApp.id}')` 
-            : `window.installApp('${storeApp.id}')`;
+        // ローカルモードの場合は、ボタンを無効化する
+        const isDisabled = !db;
+        const buttonText = isDisabled ? '⚠️ ローカルモード' : (isInstalled ? 'アンインストール' : 'インストール');
+        const buttonClass = isDisabled 
+            ? 'bg-gray-300 text-gray-600 cursor-not-allowed'
+            : (isInstalled ? 'bg-red-400 hover:bg-red-500' : 'bg-blue-500 hover:bg-blue-600');
+        const buttonAction = isDisabled 
+            ? '' 
+            : (isInstalled 
+                ? `window.uninstallApp('${storeApp.id}')` 
+                : `window.installApp('${storeApp.id}')`);
+
 
         card.innerHTML = `
             <div class="flex items-start mb-4">
@@ -320,10 +342,11 @@ function renderStoreApps() {
             </div>
             <div class="mt-auto">
                 <button 
-                    class="w-full px-4 py-2 text-white font-bold rounded-lg transition-colors duration-200 ${isInstalled ? 'bg-red-400 hover:bg-red-500' : 'bg-blue-500 hover:bg-blue-600'}"
+                    class="w-full px-4 py-2 text-white font-bold rounded-lg transition-colors duration-200 ${buttonClass}"
                     onclick="${buttonAction}"
+                    ${isDisabled ? 'disabled' : ''}
                 >
-                    ${isInstalled ? 'アンインストール' : 'インストール'}
+                    ${buttonText}
                 </button>
             </div>
         `;
@@ -333,30 +356,22 @@ function renderStoreApps() {
 
 
 /**
- * アプリを起動するぜ！
- * ブラウザの画面をアプリのHTMLファイルに直接ジャンプさせる！
+ * アプリを起動するぜ！ (画面遷移)
  */
 function launchApp(appId) {
     console.log(`🐢 アプリ起動リクエスト: ID=${appId} - 画面を直接切り替えるぞ！`);
-    
     const appPath = `./apps/${appId}.html`;
-    
-    // シンプルに画面遷移させる！これでfetchやスクリプト再実行の複雑な問題はすべて解決！
     window.location.href = appPath;
-
-    // 遷移した後のために、ログだけ出しておく
     alertMessage(`🚀 ${appId} を起動したぜ！画面が切り替わるぞ！`, 'info');
 }
 
 
 /**
- * カスタムアラートメッセージを表示する関数
+ * カスタムアラートメッセージを表示する関数 (UI省略)
  */
 function alertMessage(message, type = 'info') {
-    // alert()は使えないから、メッセージをコンソールに出力するぜ！
     console.log(`[メッセージ: ${type.toUpperCase()}] ${message}`);
     
-    // UIとしてメッセージを表示する場合（簡易版）
     const msgDiv = document.createElement('div');
     msgDiv.textContent = message;
     msgDiv.className = `fixed bottom-4 right-4 p-3 rounded-lg shadow-xl text-white z-[100] transition-opacity duration-300 ${type === 'error' ? 'bg-red-600' : (type === 'success' ? 'bg-green-600' : 'bg-blue-600')}`;
@@ -372,12 +387,16 @@ function alertMessage(message, type = 'info') {
  * インストール済みアプリを全削除するぜ！
  */
 async function clearInstalledApps() {
-    if (!db || !isAuthReady) {
-        alertMessage("🚨 Firebaseが利用できないので削除できないぞ！", 'error');
+    // 【堅牢性チェック】
+    if (!db) {
+        alertMessage("🚨 現在ローカルモードで実行中。削除操作は無視されるぞ！", 'error');
+        return;
+    }
+    if (!isAuthReady) {
+        alertMessage("🚨 Firebaseがまだ準備できていないぞ！少し待ってね。", 'error');
         return;
     }
 
-    // ユーザーに確認を促すUI（ここでは簡易的に）
     console.log("⚠️ 確認: 全てのインストール済みアプリを削除するよ！続行...");
     
     try {
