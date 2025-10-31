@@ -16,6 +16,7 @@ const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
 let isAuthReady = false;
 
 // 外部から利用できるようにエクスポート
+// NOTE: launchApp, uninstallApp, installApp は window.に割り当ててHTMLから直接呼ぶ
 export { initFirebase, loadInstalledApps, launchApp, installApp, uninstallApp, clearInstalledApps, renderStoreApps, userId };
 
 
@@ -152,7 +153,7 @@ async function installApp(id) {
         });
         
         alertMessage(`✅ ${storeApp.name} をインストールしたぜ！`, 'success');
-        showMyApp(); // マイアプリ画面に戻る (onSnapshotがUIを更新するはずだが、念のため)
+        window.showMyApp(); // マイアプリ画面に戻る (onSnapshotがUIを更新するはずだが、念のため)
     } catch (e) {
         console.error(`🚨 アプリのインストールに失敗したぞ！(Firestoreエラー): ${e.code || '不明'}`, e);
         alertMessage(`❌ インストールに失敗した... (Firestore/パーミッションエラーかも): ${e.message}`, 'error');
@@ -219,7 +220,7 @@ function loadInstalledApps() {
                         color: data.color || storeApp.color,
                         isInstalled: true,
                         // 起動アクションをセット (HTML側で呼び出し可能にする)
-                        action: () => launchApp(storeApp.id, storeApp.name)
+                        action: () => launchApp(storeApp.id)
                     });
                 }
             });
@@ -271,8 +272,8 @@ function renderInstalledApps() {
     installedApps.forEach(app => {
         const appIcon = document.createElement('div');
         appIcon.className = 'app-icon-container flex flex-col items-center p-2';
-        // HTML側で定義されたlaunchAppを呼び出すように変更
-        appIcon.setAttribute('onclick', `window.launchApp('${app.id}', '${app.name}')`);
+        // 修正: 起動は launchApp を呼び出す
+        appIcon.setAttribute('onclick', `window.launchApp('${app.id}')`);
         
         appIcon.innerHTML = `
             <div class="w-16 h-16 sm:w-20 sm:h-20 flex items-center justify-center ${app.color} rounded-2xl shadow-lg transform hover:scale-105 transition-transform duration-150 mb-1">
@@ -333,67 +334,18 @@ function renderStoreApps() {
 
 /**
  * アプリを起動するぜ！
+ * ブラウザの画面をアプリのHTMLファイルに直接ジャンプさせる！
  */
-async function launchApp(appId, appName) {
-    console.log(`🐢 アプリ起動リクエスト: ID=${appId}, 名前=${appName} - 起動ロジックスタート！`);
+function launchApp(appId) {
+    console.log(`🐢 アプリ起動リクエスト: ID=${appId} - 画面を直接切り替えるぞ！`);
     
-    // HTML側で定義されているUI操作関数を呼び出す
-    window.openAppOverlay(appName); 
-    const appContainer = document.getElementById('app-container');
+    const appPath = `./apps/${appId}.html`;
+    
+    // シンプルに画面遷移させる！これでfetchやスクリプト再実行の複雑な問題はすべて解決！
+    window.location.href = appPath;
 
-    try {
-        const appPath = `./apps/${appId}.html`;
-        const response = await fetch(appPath);
-
-        if (!response.ok) {
-            throw new Error(`アプリファイルが見つからないか、読み込み失敗だ！ステータス: ${response.status}`);
-        }
-
-        const appHtmlContent = await response.text();
-        
-        if (appContainer) {
-            appContainer.className = 'w-full h-full overflow-y-auto bg-gray-100 p-0';
-        
-            const parser = new DOMParser();
-            const doc = parser.parseFromString(appHtmlContent, 'text/html');
-            
-            // アプリのコンテンツをセット
-            const appContent = doc.body.innerHTML;
-            appContainer.innerHTML = appContent;
-
-            // スクリプトの再実行
-            // body内の全てのスクリプトタグを探し、新しい要素として追加し直すことで実行させる
-            doc.querySelectorAll('script').forEach(oldScript => {
-                const newScript = document.createElement('script');
-                // type属性がある場合はコピー (例: type="module")
-                if (oldScript.type) newScript.type = oldScript.type; 
-                // srcがある場合はコピー
-                if (oldScript.src) newScript.src = oldScript.src; 
-                // インラインコードがある場合はコピー
-                if (oldScript.textContent) newScript.textContent = oldScript.textContent;
-                
-                // appContainerに新しいスクリプト要素を追加し、実行させる
-                appContainer.appendChild(newScript); 
-            });
-        }
-
-        console.log(`✅ アプリ ${appName} が正常に起動したぜ！`);
-
-    } catch (error) {
-        console.error(`🚨 アプリ起動エラー (${appId})`, error);
-        
-        if (appContainer) {
-            appContainer.innerHTML = `
-                <div class="p-10 text-center bg-red-100 border-l-4 border-red-500 text-red-700 h-full flex flex-col justify-center items-center">
-                    <h3 class="text-2xl font-extrabold mb-3">❌ アプリの起動に失敗したぜ！</h3>
-                    <p class="mb-2">エラー内容: ファイルの読み込みまたは実行で問題が発生したぞ。</p>
-                    <p class="text-sm font-mono break-all mt-3 px-4 py-2 bg-red-200 rounded-lg max-w-full overflow-x-auto">
-                        詳細エラー: ${error.message}
-                    </p>
-                </div>
-            `;
-        }
-    }
+    // 遷移した後のために、ログだけ出しておく
+    alertMessage(`🚀 ${appId} を起動したぜ！画面が切り替わるぞ！`, 'info');
 }
 
 
