@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>まっちゃOS ランチャー</title>
-    <!-- Tailwind CSSを読み込むぜ！ -->
+    <!-- Tailwind CSSを読み込むぞ！ -->
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         /* フォント設定：日本語対応のためにNoto Sans JPを使うぜ！ */
@@ -22,13 +22,8 @@
             transform: translateY(-4px);
             box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 4, 0, 0.05);
         }
-        /* アプリ実行時のコンテナは、画面いっぱいに広がるように設定 */
-        #app-container {
-            width: 100%;
-            height: calc(100% - 56px); /* ヘッダーの高さ (56px) を引く */
-            overflow-y: auto;
-            -webkit-overflow-scrolling: touch;
-        }
+        /* メッセージ表示用のz-index確保 */
+        #matcha-toast { z-index: 9999; }
     </style>
 </head>
 <body class="min-h-screen">
@@ -47,15 +42,15 @@
 
         <!-- メインナビゲーションボタン -->
         <div class="flex justify-center space-x-4 sm:space-x-6 mb-16">
-            <button id="btn-my-app" onclick="showMyApp()" class="flex-1 max-w-xs flex flex-col items-center justify-center p-4 sm:p-6 bg-green-500 hover:bg-green-600 text-white font-bold rounded-xl shadow-lg transition-colors duration-200">
+            <button id="btn-my-app" onclick="window.showMyApp()" class="flex-1 max-w-xs flex flex-col items-center justify-center p-4 sm:p-6 bg-green-500 hover:bg-green-600 text-white font-bold rounded-xl shadow-lg transition-colors duration-200">
                 <div class="text-2xl mb-1">◻️</div>
                 <div class="text-lg">マイアプリ</div>
                 <div id="app-count" class="text-xs font-light mt-1">0個インストール済み</div>
             </button>
-            <button id="btn-store" class="flex-1 max-w-xs flex flex-col items-center justify-center p-4 sm:p-6 bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold rounded-xl shadow-lg transition-colors duration-200" onclick="showStore()">
+            <button id="btn-store" class="flex-1 max-w-xs flex flex-col items-center justify-center p-4 sm:p-6 bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold rounded-xl shadow-lg transition-colors duration-200" onclick="window.showStore()">
                 <div class="text-2xl mb-1">🏆</div>
                 <div class="text-lg">まっちゃストア</div>
-                <div class="text-xs font-light mt-1">2種類のアプリ</div>
+                <div class="text-xs font-light mt-1">3種類のアプリ</div>
             </button>
         </div>
 
@@ -64,7 +59,7 @@
             <h2 id="app-area-title" class="text-2xl font-bold text-gray-800 mb-6 flex justify-between items-center">
                 マイアプリ
                 <!-- app_loader.jsからインポートした関数を呼び出す -->
-                <button onclick="window.clearInstalledApps()" class="text-gray-400 hover:text-red-500 transition-colors">
+                <button onclick="window.clearInstalledApps()" class="text-gray-400 hover:text-red-500 transition-colors" title="インストール済みアプリを全て削除">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 inline-block" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
                 </button>
             </h2>
@@ -84,24 +79,10 @@
         </div>
     </div>
 
-    <!-- *********** アプリ実行コンテナ (ここがアプリが動く場所だ！) *********** -->
-    <div id="app-overlay" class="fixed inset-0 bg-white z-50 transform translate-y-full transition-transform duration-500 ease-in-out">
-        <header class="flex items-center justify-between p-3 bg-gray-50 border-b border-gray-200 shadow-md h-[56px]">
-            <button onclick="closeApp()" class="text-gray-600 hover:text-gray-800 transition-colors p-1 rounded-full hover:bg-gray-100">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
-            </button>
-            <h1 id="app-title-bar" class="text-lg font-bold text-gray-800 truncate">アプリ名</h1>
-            <div class="w-6 h-6"></div> <!-- スペーサー -->
-        </header>
-        <div id="app-container" class="w-full h-full overflow-y-auto">
-            <!-- 起動されたアプリのコンテンツがここに表示されるぜ！ -->
-        </div>
-    </div>
-
     <!-- *********** JavaScript ロジック (UIとインポート担当) *********** -->
     <script type="module">
         // 処理ロジックを分離したapp_loader.jsをインポートするぜ！
-        import { initFirebase, loadInstalledApps, launchApp, installApp, uninstallApp, clearInstalledApps, userId } from './app_loader.js';
+        import { initFirebase, loadInstalledApps, launchApp, installApp, uninstallApp, clearInstalledApps } from './app_loader.js';
 
         // グローバル変数を定義して、アプリ実行時のスクリプトから使えるようにする
         const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
@@ -125,6 +106,10 @@
             storeView.classList.remove('hidden');
             appArea.classList.add('hidden');
             document.getElementById('app-area-title').textContent = 'まっちゃストア';
+            document.getElementById('btn-store').classList.replace('bg-gray-100', 'bg-green-500');
+            document.getElementById('btn-store').classList.replace('text-gray-800', 'text-white');
+            document.getElementById('btn-my-app').classList.replace('bg-green-500', 'bg-gray-100');
+            document.getElementById('btn-my-app').classList.replace('text-white', 'text-gray-800');
         };
 
         // マイアプリを表示する
@@ -132,47 +117,19 @@
             storeView.classList.add('hidden');
             appArea.classList.remove('hidden');
             document.getElementById('app-area-title').textContent = 'マイアプリ';
+            document.getElementById('btn-my-app').classList.replace('bg-gray-100', 'bg-green-500');
+            document.getElementById('btn-my-app').classList.replace('text-gray-800', 'text-white');
+            document.getElementById('btn-store').classList.replace('bg-green-500', 'bg-gray-100');
+            document.getElementById('btn-store').classList.replace('text-white', 'text-gray-800');
             // loadInstalledApps(); // onSnapshotで自動更新されるはず
         };
-
-        // アプリ実行オーバーレイを開く (app_loaderから呼ばれる)
-        window.openAppOverlay = (appName) => {
-            const appOverlay = document.getElementById('app-overlay');
-            const appTitleBar = document.getElementById('app-title-bar');
-            const appContainer = document.getElementById('app-container');
-            
-            if (appTitleBar) appTitleBar.textContent = appName;
-            if (appOverlay) appOverlay.style.transform = 'translateY(0)';
-            
-            // ローディング表示
-            if (appContainer) {
-                appContainer.className = 'w-full h-full overflow-y-auto bg-gray-50 flex items-center justify-center';
-                appContainer.innerHTML = `
-                    <div class="flex flex-col items-center justify-center p-10 text-center">
-                        <div class="animate-spin rounded-full h-12 w-12 border-t-4 border-b-4 border-green-500 mb-4"></div>
-                        <p class="text-xl font-bold text-green-600">
-                            ${appName} のファイルを読み込み中だぞ...！
-                        </p>
-                    </div>
-                `;
-            }
-        }
-
-        // アプリ実行オーバーレイを閉じる
-        window.closeApp = () => {
-            const appOverlay = document.getElementById('app-overlay');
-            if (appOverlay) {
-                appOverlay.style.transform = 'translateY(100%)';
-            }
-        };
-
 
         // ********** 初期化 **********
         window.onload = () => {
             // Firebase初期化をapp_loaderに任せる！
             initFirebase(firebaseConfig, initialAuthToken);
             // 初期表示はマイアプリ画面
-            showMyApp();
+            window.showMyApp(); 
         };
 
     </script>
