@@ -14,32 +14,22 @@ const RAW_APP_DATA = [
         id: "chat_app",
         title: "まっちゃチャット",
         icon: "💬", // 復活: MessageCircle -> 💬
-        description: "友達や家族とリアルタイムで会話を楽しもう！"
+        description: "まだ開発に取り掛かってないよ！"
     },
     {
         id: "todo_list",
         title: "シンプルToDoリスト",
         icon: "✅", // 復活: ListChecks -> ✅
-        description: "今日のタスクをサクッと管理！忘れ物なし！"
+        description: "まだ開発に取り掛かってないよ！"
     },
     {
-        id: "theme_song_player",
-        title: "テーマソングプレイヤー",
+        id: "music_player",
+        title: "ミュージックプレイヤー",
         icon: "🎶", // 復活: Music -> 🎶
-        description: "まっちゃのテーマソングをいつでも聞けるよ！"
+        description: "まだ開発に取り掛かってないよ！"
     },
     {
-        id: "file_manager",
-        title: "倉庫・ファイル管理",
-        icon: "📦", // 復活: Archive -> 📦
-        description: "大切なファイルをクラウドで安全に管理しよう。"
-    },
-    {
-        id: "settings",
-        title: "設定・オプション",
-        icon: "⚙️", // 復活: Settings -> ⚙️
-        description: "アプリ全体の動作をカスタマイズするぞ！"
-    }
+
 ];
 
 // IDを使ってBASE_URLと組み合わせ、pathプロパティを動的に生成する！
@@ -51,3 +41,4 @@ const APP_DATA = RAW_APP_DATA.map(app => ({
 
 // このファイルにはアプリケーションリストのデータのみを定義し、
 // ロジックはindex.html側で処理するぜ！
+
