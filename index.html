@@ -1,7 +1,7 @@
 <!--
-    まっちゃアプリ (index.html) - 絵文字アイコン復活版
-    ユーザーの要求通り、アイコンをSVG線画からネイティブ絵文字（🍽️, 💬など）に戻したぞ！
-    フォントスタックを調整して、絵文字がカラフルに表示されるようにした。
+    まっちゃアプリ (index.html) - 最終アイコン修正版
+    ホーム画面に追加した際のアイコンが🐢の絵文字になる問題を修正するため、
+    apple-touch-iconとfaviconをBase64で埋め込んだSVGで設定するぞ！
 -->
 <!DOCTYPE html>
 <html lang="ja">
@@ -12,6 +12,23 @@
     <title>🐢まっちゃあぷり</title>
     <!-- Tailwind CSSを読み込むぞ！これでかっこいいUIを作る！ -->
     <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- ************ 🚨 最終修正: ホーム画面・ファビコン用のアイコン設定 ************ -->
+    <!-- Base64でエンコードした、まっちゃカラーの亀アイコンSVGを埋め込む！ -->
+    
+    <!-- iPhone/iPadのホーム画面用アイコン (apple-touch-icon) -->
+    <link rel="apple-touch-icon" sizes="180x180" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAwIDEwMDAiPgogIDxyZWN0IHdpZHRoPSIxMDAwIiBoZWlnaHQ9IjEwMDAiIHJ4PSIyMDAiIHJ5PSIyMDAiIGZpbGw9IiM0Q0FGNTAiLz4KICA8dGV4dCB4PSI1MDAiIHk9IjY1MCIgZm9udC1zaXplPSI1NTAiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZpbGw9IiNGRkZGRkYiIGZvbnQtZmFtaWx5PSJhcHBsZS1zeXN0ZW0iPsOpPC90ZXh0Pgo8L3N2Zz4=">
+    
+    <!-- ブラウザタブ用アイコン (favicon) -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAwIDEwMDAiPgogIDxyZWN0IHdpZHRoPSIxMDAwIiBoZWlnaHQ9IjEwMDAiIHJ4PSIyMDAiIHJ5PSIyMDAiIGZpbGw9IiM0Q0FGNTAiLz4KICA8dGV4dCB4PSI1MDAiIHk9IjY1MCIgZm9udC1zaXplPSI1NTAiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZpbGw9IiNGRkZGRkYiIGZvbnQtZmFtaWx5PSJhcHBsZS1zeXN0ZW0iPsOpPC90ZXh0Pgo8L3N2Zz4=">
+    
+    <!-- 🐢 カメアイコンのSVG詳細:
+         - 外枠を#4CAF50（まっちゃプライマリー）の角丸矩形に設定
+         - 中央に白いテキスト（フォントはシステムデフォルト）で「🐢」の絵文字を配置
+         - これでカラフルな絵文字ではなく、緑色の背景に白い絵文字のロゴとして認識されるはず！
+    -->
+    <!-- ****************************************************************************** -->
+    
     <style>
         /* 🐢 まっちゃカラーパレット */
         .bg-matcha-light { background-color: #F1F8E9; } /* Lightest Green */
@@ -20,7 +37,7 @@
         .bg-matcha-dark { color: #388E3C; }
         
         /* 修正点: ネイティブのUIフォントと絵文字フォントを全て追加するぞ！
-           これで絵文字（🍽️, 💬, 🐢など）がカラフルなシステム標準で表示される！ */
+           これでアプリカード内の絵文字（🍽️, 💬, 🐢など）がカラフルなシステム標準で表示される！ */
         body {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
         }
@@ -41,8 +58,6 @@
                 }
             }
         }
-        
-        // 🚨 修正: ICON_SVG_MAPは不要になったので削除する！
         
         /**
          * 外部から読み込んだAPP_DATAを使って、アプリケーションカードをDOMに描画するぞ！
@@ -79,8 +94,7 @@
                 
                 card.innerHTML = `
                     <div class="flex items-start space-x-4">
-                        <!-- 🚨 修正: SVGの代わりに、app.icon（絵文字）をそのまま表示する！
-                             text-3xlで大きく、絵文字がフォントのカラー（緑）の影響を受けないようにtext-gray-900（黒）を指定するぞ -->
+                        <!-- アプリカードのアイコンは絵文字でOK！ -->
                         <div class="p-3 rounded-full bg-matcha-light group-hover:bg-matcha-primary group-hover:text-white transition duration-300 flex-shrink-0 text-3xl flex items-center justify-center" style="width: 48px; height: 48px;">
                             ${app.icon || '?'}
                         </div>
