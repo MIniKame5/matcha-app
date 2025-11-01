@@ -1,137 +1,135 @@
+<!--
+    まっちゃアプリ (index.html) - 絵文字アイコン復活版
+    ユーザーの要求通り、アイコンをSVG線画からネイティブ絵文字（🍽️, 💬など）に戻したぞ！
+    フォントスタックを調整して、絵文字がカラフルに表示されるようにした。
+-->
 <!DOCTYPE html>
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>まっちゃOS ランチャー</title>
-    <!-- Tailwind CSSを読み込むぞ！ -->
+    <!-- 究極のまっちゃタイトルだ！🐢が先、飾りなし！ -->
+    <title>🐢まっちゃあぷり</title>
+    <!-- Tailwind CSSを読み込むぞ！これでかっこいいUIを作る！ -->
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* フォント設定：日本語対応のためにNoto Sans JPを使うぜ！ */
-        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@100..900&display=swap');
+        /* 🐢 まっちゃカラーパレット */
+        .bg-matcha-light { background-color: #F1F8E9; } /* Lightest Green */
+        .text-matcha-primary { color: #4CAF50; }
+        .bg-matcha-primary { background-color: #4CAF50; }
+        .bg-matcha-dark { color: #388E3C; }
+        
+        /* 修正点: ネイティブのUIフォントと絵文字フォントを全て追加するぞ！
+           これで絵文字（🍽️, 💬, 🐢など）がカラフルなシステム標準で表示される！ */
         body {
-            font-family: 'Noto Sans JP', sans-serif;
-            background-color: #f7ffe0; /* まっちゃっぽい優しいクリーム色！ */
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
         }
-        /* アプリのアイコンコンテナにホバー効果を追加 */
-        .app-icon-container {
-            transition: transform 0.15s ease-out, box-shadow 0.15s ease-out;
-            cursor: pointer;
-        }
-        .app-icon-container:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 4, 0, 0.05);
-        }
-        /* メッセージ表示用のz-index確保 */
-        #matcha-toast { z-index: 9999; }
     </style>
-</head>
-<body class="min-h-screen">
-
-    <!-- メインランチャーUI -->
-    <div id="launcher-view" class="p-4 sm:p-8 max-w-4xl mx-auto">
-        <div class="flex flex-col items-center justify-center pt-8 pb-12">
-            <!-- まっちゃ OS ロゴ -->
-            <div class="text-6xl mb-2">🐢</div>
-            <h1 class="text-4xl font-extrabold text-green-700 tracking-wider">
-                まっちゃアプリ
-            </h1>
-            <p class="text-sm text-gray-600 mt-2">AI拡張機能で、もっと便利に！</p>
-            <p id="user-id-display" class="text-xs text-gray-400 mt-1">ユーザーID: Firebase接続中...</p>
-        </div>
-
-        <!-- メインナビゲーションボタン -->
-        <div class="flex justify-center space-x-4 sm:space-x-6 mb-16">
-            <button id="btn-my-app" onclick="window.showMyApp()" class="flex-1 max-w-xs flex flex-col items-center justify-center p-4 sm:p-6 bg-green-500 hover:bg-green-600 text-white font-bold rounded-xl shadow-lg transition-colors duration-200">
-                <div class="text-2xl mb-1">◻️</div>
-                <div class="text-lg">マイアプリ</div>
-                <div id="app-count" class="text-xs font-light mt-1">0個インストール済み</div>
-            </button>
-            <button id="btn-store" class="flex-1 max-w-xs flex flex-col items-center justify-center p-4 sm:p-6 bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold rounded-xl shadow-lg transition-colors duration-200" onclick="window.showStore()">
-                <div class="text-2xl mb-1">🏆</div>
-                <div class="text-lg">まっちゃストア</div>
-                <div class="text-xs font-light mt-1">3種類のアプリ</div>
-            </button>
-        </div>
-
-        <!-- *********** アプリ表示エリア *********** -->
-        <div id="app-area" class="w-full">
-            <h2 id="app-area-title" class="text-2xl font-bold text-gray-800 mb-6 flex justify-between items-center">
-                マイアプリ
-                <!-- app_loader.jsからインポートした関数を呼び出す -->
-                <button onclick="window.clearInstalledApps()" class="text-gray-400 hover:text-red-500 transition-colors" title="インストール済みアプリを全て削除">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 inline-block" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                </button>
-            </h2>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        // bodyで設定しているので、ここでは上書きしない
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        'matcha-primary': '#4CAF50',
+                        'matcha-light': '#F1F8E9',
+                        'matcha-dark': '#388E3C',
+                    }
+                }
+            }
+        }
+        
+        // 🚨 修正: ICON_SVG_MAPは不要になったので削除する！
+        
+        /**
+         * 外部から読み込んだAPP_DATAを使って、アプリケーションカードをDOMに描画するぞ！
+         * APP_DATAはapp_loader.jsから提供されることを想定する。
+         */
+        function renderAppCards() {
+            const container = document.getElementById('app-list-container');
+            const loadingMessage = document.getElementById('loading-message');
             
-            <!-- インストール済みアプリの一覧表示エリア -->
-            <div id="installed-apps-list" class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-6 p-4 bg-white rounded-3xl shadow-xl border border-gray-100">
-                <!-- アプリのアイコンがここに動的に挿入されるぜ！ -->
-            </div>
-        </div>
+            // APP_DATAがまだ読み込まれていないか、空の場合は何もしない
+            if (!container || typeof APP_DATA === 'undefined' || APP_DATA.length === 0) {
+                // ロードメッセージを残しておく
+                return;
+            }
 
-        <!-- *********** アプリストアUI *********** -->
-        <div id="store-view" class="hidden w-full">
-            <h2 class="text-2xl font-bold text-gray-800 mb-6">まっちゃストア</h2>
-            <div id="store-apps-list" class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <!-- ストアのアプリカードがここに動的に挿入されるぜ！ -->
-            </div>
-        </div>
-    </div>
+            // 読み込みメッセージを消すぞ！
+            if (loadingMessage) {
+                loadingMessage.remove();
+            }
 
-    <!-- *********** JavaScript ロジック (UIとインポート担当) *********** -->
-    <script type="module">
-        // 処理ロジックを分離したapp_loader.jsをインポートするぜ！
-        import { initFirebase, loadInstalledApps, launchApp, installApp, uninstallApp, clearInstalledApps } from './app_loader.js';
+            container.innerHTML = '';
 
-        // グローバル変数を定義して、アプリ実行時のスクリプトから使えるようにする
-        const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
-        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : '';
+            APP_DATA.forEach(app => {
+                const card = document.createElement('a');
+                // 🚨 app_loader.jsでpathが設定されていることを期待する！
+                card.href = app.path || 'javascript:void(0)';
+                card.className = "group block p-6 bg-white border border-gray-100 rounded-xl shadow-lg hover:shadow-2xl transition duration-300 transform hover:scale-[1.02]";
+                
+                // コメント: パスがない場合はカーソルを変更して無効化するぞ
+                if (!app.path || app.path === 'javascript:void(0)') {
+                    card.classList.remove('cursor-pointer');
+                    card.classList.add('cursor-not-allowed', 'opacity-70');
+                }
+                
+                card.innerHTML = `
+                    <div class="flex items-start space-x-4">
+                        <!-- 🚨 修正: SVGの代わりに、app.icon（絵文字）をそのまま表示する！
+                             text-3xlで大きく、絵文字がフォントのカラー（緑）の影響を受けないようにtext-gray-900（黒）を指定するぞ -->
+                        <div class="p-3 rounded-full bg-matcha-light group-hover:bg-matcha-primary group-hover:text-white transition duration-300 flex-shrink-0 text-3xl flex items-center justify-center" style="width: 48px; height: 48px;">
+                            ${app.icon || '?'}
+                        </div>
+                        <div>
+                            <h3 class="text-xl font-bold text-gray-900 mb-1 group-hover:text-matcha-dark">${app.title}</h3>
+                            <p class="text-sm text-gray-500">${app.description}</p>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
 
-        // 外部から呼び出せるように、windowに処理ロジックの関数を割り当てるぜ！
-        window.launchApp = launchApp;
-        window.installApp = installApp;
-        window.uninstallApp = uninstallApp;
-        window.clearInstalledApps = clearInstalledApps;
-
-
-        // ********** UI切り替えロジック (HTML側で管理する) **********
-        
-        const launcher = document.getElementById('launcher-view');
-        const storeView = document.getElementById('store-view');
-        const appArea = document.getElementById('app-area');
-        
-        // ストアを表示する
-        window.showStore = () => {
-            storeView.classList.remove('hidden');
-            appArea.classList.add('hidden');
-            document.getElementById('app-area-title').textContent = 'まっちゃストア';
-            document.getElementById('btn-store').classList.replace('bg-gray-100', 'bg-green-500');
-            document.getElementById('btn-store').classList.replace('text-gray-800', 'text-white');
-            document.getElementById('btn-my-app').classList.replace('bg-green-500', 'bg-gray-100');
-            document.getElementById('btn-my-app').classList.replace('text-white', 'text-gray-800');
-        };
-
-        // マイアプリを表示する
-        window.showMyApp = () => {
-            storeView.classList.add('hidden');
-            appArea.classList.remove('hidden');
-            document.getElementById('app-area-title').textContent = 'マイアプリ';
-            document.getElementById('btn-my-app').classList.replace('bg-gray-100', 'bg-green-500');
-            document.getElementById('btn-my-app').classList.replace('text-gray-800', 'text-white');
-            document.getElementById('btn-store').classList.replace('bg-green-500', 'bg-gray-100');
-            document.getElementById('btn-store').classList.replace('text-white', 'text-gray-800');
-            // loadInstalledApps(); // onSnapshotで自動更新されるはず
-        };
-
-        // ********** 初期化 **********
-        window.onload = () => {
-            // Firebase初期化をapp_loaderに任せる！
-            initFirebase(firebaseConfig, initialAuthToken);
-            // 初期表示はマイアプリ画面
-            window.showMyApp(); 
-        };
+        // ページが読み込まれたら描画を試みる。APP_DATAはapp_loader.jsが設定する。
+        document.addEventListener('DOMContentLoaded', renderAppCards);
 
     </script>
+</head>
+<body class="bg-matcha-light min-h-screen p-4 sm:p-8">
+
+    <div class="max-w-4xl mx-auto">
+        
+        <!-- ヘッダー (究極のまっちゃタイトル！) -->
+        <header class="text-center mb-10 p-6 rounded-xl">
+            <h1 class="text-5xl sm:text-6xl font-extrabold text-matcha-dark mb-2">
+                🐢まっちゃあぷり
+            </h1>
+        </header>
+
+        <!-- アプリケーションリスト -->
+        <section class="mb-10">
+            <h2 class="text-3xl font-bold text-gray-800 mb-6 border-b-2 border-matcha-primary pb-2">
+                アプリ一覧
+            </h2>
+            <div id="app-list-container" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- JSによって、カードがここに動的に挿入されるぞ！ -->
+                <p id="loading-message" class="text-gray-500 col-span-full text-center">🐢 アプリを読み込み中...</p>
+            </div>
+        </section>
+
+        <!-- フッター (クリーン！) -->
+        <footer class="text-center text-sm text-gray-500 pt-8 border-t border-gray-300">
+            © 2025 Matcha-Kame All Rights Reserved.
+        </footer>
+        
+    </div>
+    
+    <!-- 外部のapp_loader.jsを読み込むぞ！ここでAPP_DATA変数が定義される！ -->
+    <script src="app_loader.js"></script>
+
 </body>
 </html>
