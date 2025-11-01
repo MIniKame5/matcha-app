@@ -10,13 +10,13 @@
     <!-- Tailwind CSSを読み込む -->
     <script src="https://cdn.tailwindcss.com"></script>
     
-    <!-- iPhone/iPadのホーム画面用アイコン (apple-touch-icon) -->
-    <!-- 形状：角丸オーバル、背景：薄いまっちゃ色 (#F1F8E9)、中央：三目並べグリッド -->
-    <!-- Base64は変更なし（君の要望通り） -->
-    <link rel="apple-touch-icon" sizes="180x180" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAwIDEwMDAiPgogIDxyZWN0IHdpZHRoPSIxMDAwIiBoZWlnaHQ9IjEwMDAiIHJ4PSI0MDAiIHJ5PSI1MDAiIHg9IjAiIHk9IjAiIGZpbGw9IiNGMUY4RTkiLz4KICA8cGF0aCBkPSJNNTUwIDEwMFY5MDBNNzUwIDEwMFY5MDBNMjUwIDQ1MEg3NTBNNTUwIDY1MEg3NTAiIHN0cm9rZT0iIzAwMDAwMCIgc3Ryb2tlLXdpZHRoPSI3MCIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIi8+CjwvU3ZnPg==">
+    <!-- 🚨🚨🚨 ここを修正したぞ！ 🚨🚨🚨 -->
+    <!-- PNG形式の外部ファイルを参照することで、キャッシュと互換性の問題を解決する！ -->
+    <!-- 適切なアセットパス (assets/icons) に変更！ -->
+    <link rel="apple-touch-icon" sizes="180x180" href="icon/app_icon.png">
     
-    <!-- ブラウザタブ用アイコン (favicon) -->
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAwIDEwMDAiPgogIDxyZWN0IHdpZHRoPSIxMDAwIiBoZWlnaHQ9IjEwMDAiIHJ4PSI0MDAiIHJ5PSI1MDAiIHg9IjAiIHk9IjAiIGZpbGw9IiNGMUY4RTkiLz4KICA8cGF0aCBkPSJNNTUwIDEwMFY5MDBNNzUwIDEwMFY5MDBNMjUwIDQ1MEg3NTBNNTUwIDY1MEg3NTAiIHN0cm9rZT0iIzAwMDAwMCIgc3Ryb2tlLXdpZHRoPSI3MCIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIi8+CjwvU3ZnPg==">
+    <!-- ブラウザタブ用アイコン (favicon) も同様にPNGを参照する！ -->
+    <link rel="icon" type="image/png" sizes="32x32" href="icon/app_icon.png">
     
     <style>
         /* 🐢 まっちゃカラーパレット */
@@ -97,11 +97,11 @@
 
     <div class="max-w-4xl mx-auto">
         
-        <!-- ヘッダー部分。タイトルはシンプルに「まっちゃあぷり」に戻す -->
+        <!-- UIは変更しない！亀の絵文字も直したまま！ -->
         <header class="text-center mb-10 p-6 rounded-xl">
             <h1 class="text-5xl sm:text-6xl font-extrabold text-matcha-dark mb-2 flex items-center justify-center space-x-4">
                 <span class="text-4xl">
-                    <!-- 🐢 亀の絵文字に戻す！ -->
+                    <!-- 🐢 亀の絵文字 -->
                     <span role="img" aria-label="アプリ">🐢</span>
                 </span>
                 <span>まっちゃあぷり</span>
