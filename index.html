@@ -1,43 +1,30 @@
-<!--
-    まっちゃアプリ (index.html) - 最終アイコン修正版
-    ホーム画面に追加した際のアイコンが🐢の絵文字になる問題を修正するため、
-    apple-touch-iconとfaviconをBase64で埋め込んだSVGで設定するぞ！
--->
 <!DOCTYPE html>
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <!-- 究極のまっちゃタイトルだ！🐢が先、飾りなし！ -->
-    <title>🐢まっちゃあぷり</title>
-    <!-- Tailwind CSSを読み込むぞ！これでかっこいいUIを作る！ -->
+    
+    <!-- ファイルのタイトルはシンプルに -->
+    <title>まっちゃあぷり</title>
+    
+    <!-- Tailwind CSSを読み込む -->
     <script src="https://cdn.tailwindcss.com"></script>
     
-    <!-- ************ 🚨 最終修正: ホーム画面・ファビコン用のアイコン設定 ************ -->
-    <!-- Base64でエンコードした、まっちゃカラーの亀アイコンSVGを埋め込む！ -->
-    
     <!-- iPhone/iPadのホーム画面用アイコン (apple-touch-icon) -->
-    <link rel="apple-touch-icon" sizes="180x180" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAwIDEwMDAiPgogIDxyZWN0IHdpZHRoPSIxMDAwIiBoZWlnaHQ9IjEwMDAiIHJ4PSIyMDAiIHJ5PSIyMDAiIGZpbGw9IiM0Q0FGNTAiLz4KICA8dGV4dCB4PSI1MDAiIHk9IjY1MCIgZm9udC1zaXplPSI1NTAiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZpbGw9IiNGRkZGRkYiIGZvbnQtZmFtaWx5PSJhcHBsZS1zeXN0ZW0iPsOpPC90ZXh0Pgo8L3N2Zz4=">
+    <!-- 形状：角丸オーバル、背景：薄いまっちゃ色 (#F1F8E9)、中央：三目並べグリッド -->
+    <link rel="apple-touch-icon" sizes="180x180" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAwIDEwMDAiPgogIDxyZWN0IHdpZHRoPSIxMDAwIiBoZWlnaHQ9IjEwMDAiIHJ4PSI0MDAiIHJ5PSI1MDAiIHg9IjAiIHk9IjAiIGZpbGw9IiNGMUY4RTkiLz4KICA8cGF0aCBkPSJNNTUwIDEwMFY5MDBNNzUwIDEwMFY5MDBNMjUwIDQ1MEg3NTBNNTUwIDY1MEg3NTAiIHN0cm9rZT0iIzAwMDAwMCIgc3Ryb2tlLXdpZHRoPSI3MCIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIi8+CjwvU3ZnPg==">
     
     <!-- ブラウザタブ用アイコン (favicon) -->
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAwIDEwMDAiPgogIDxyZWN0IHdpZHRoPSIxMDAwIiBoZWlnaHQ9IjEwMDAiIHJ4PSIyMDAiIHJ5PSIyMDAiIGZpbGw9IiM0Q0FGNTAiLz4KICA8dGV4dCB4PSI1MDAiIHk9IjY1MCIgZm9udC1zaXplPSI1NTAiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZpbGw9IiNGRkZGRkYiIGZvbnQtZmFtaWx5PSJhcHBsZS1zeXN0ZW0iPsOpPC90ZXh0Pgo8L3N2Zz4=">
-    
-    <!-- 🐢 カメアイコンのSVG詳細:
-         - 外枠を#4CAF50（まっちゃプライマリー）の角丸矩形に設定
-         - 中央に白いテキスト（フォントはシステムデフォルト）で「🐢」の絵文字を配置
-         - これでカラフルな絵文字ではなく、緑色の背景に白い絵文字のロゴとして認識されるはず！
-    -->
-    <!-- ****************************************************************************** -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAwIDEwMDAiPgogIDxyZWN0IHdpZHRoPSIxMDAwIiBoZWlnaHQ9IjEwMDAiIHJ4PSI0MDAiIHJ5PSI1MDAiIHg9IjAiIHk9IjAiIGZpbGw9IiNGMUY4RTkiLz4KICA8cGF0aCBkPSJNNTUwIDEwMFY5MDBNNzUwIDEwMFY5MDBNMjUwIDQ1MEg3NTBNNTUwIDY1MEg3NTAiIHN0cm9rZT0iIzAwMDAwMCIgc3Ryb2tlLXdpZHRoPSI3MCIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIi8+CjwvU3ZnPg==">
     
     <style>
         /* 🐢 まっちゃカラーパレット */
-        .bg-matcha-light { background-color: #F1F8E9; } /* Lightest Green */
+        .bg-matcha-light { background-color: #F1F8E9; } /* 薄いまっちゃ色 */
         .text-matcha-primary { color: #4CAF50; }
         .bg-matcha-primary { background-color: #4CAF50; }
         .bg-matcha-dark { color: #388E3C; }
         
-        /* 修正点: ネイティブのUIフォントと絵文字フォントを全て追加するぞ！
-           これでアプリカード内の絵文字（🍽️, 💬, 🐢など）がカラフルなシステム標準で表示される！ */
+        /* フォント設定 */
         body {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
         }
@@ -47,12 +34,11 @@
             theme: {
                 extend: {
                     fontFamily: {
-                        // bodyで設定しているので、ここでは上書きしない
-                        sans: ['Inter', 'sans-serif'],
+                        sans: ['Inter', 'sans-serif'], 
                     },
                     colors: {
                         'matcha-primary': '#4CAF50',
-                        'matcha-light': '#F1F8E9',
+                        'matcha-light': '#F1F8E9', /* 薄いまっちゃ色 */
                         'matcha-dark': '#388E3C',
                     }
                 }
@@ -67,26 +53,21 @@
             const container = document.getElementById('app-list-container');
             const loadingMessage = document.getElementById('loading-message');
             
-            // APP_DATAがまだ読み込まれていないか、空の場合は何もしない
             if (!container || typeof APP_DATA === 'undefined' || APP_DATA.length === 0) {
-                // ロードメッセージを残しておく
                 return;
             }
 
-            // 読み込みメッセージを消すぞ！
             if (loadingMessage) {
                 loadingMessage.remove();
             }
 
-            container.innerHTML = '';
+            container.innerHTML = ''; 
 
             APP_DATA.forEach(app => {
                 const card = document.createElement('a');
-                // 🚨 app_loader.jsでpathが設定されていることを期待する！
-                card.href = app.path || 'javascript:void(0)';
+                card.href = app.path || 'javascript:void(0)'; 
                 card.className = "group block p-6 bg-white border border-gray-100 rounded-xl shadow-lg hover:shadow-2xl transition duration-300 transform hover:scale-[1.02]";
                 
-                // コメント: パスがない場合はカーソルを変更して無効化するぞ
                 if (!app.path || app.path === 'javascript:void(0)') {
                     card.classList.remove('cursor-pointer');
                     card.classList.add('cursor-not-allowed', 'opacity-70');
@@ -94,7 +75,6 @@
                 
                 card.innerHTML = `
                     <div class="flex items-start space-x-4">
-                        <!-- アプリカードのアイコンは絵文字でOK！ -->
                         <div class="p-3 rounded-full bg-matcha-light group-hover:bg-matcha-primary group-hover:text-white transition duration-300 flex-shrink-0 text-3xl flex items-center justify-center" style="width: 48px; height: 48px;">
                             ${app.icon || '?'}
                         </div>
@@ -108,7 +88,6 @@
             });
         }
 
-        // ページが読み込まれたら描画を試みる。APP_DATAはapp_loader.jsが設定する。
         document.addEventListener('DOMContentLoaded', renderAppCards);
 
     </script>
@@ -117,32 +96,36 @@
 
     <div class="max-w-4xl mx-auto">
         
-        <!-- ヘッダー (究極のまっちゃタイトル！) -->
+        <!-- ヘッダー部分。タイトルはシンプルに「まっちゃあぷり」に戻す -->
         <header class="text-center mb-10 p-6 rounded-xl">
-            <h1 class="text-5xl sm:text-6xl font-extrabold text-matcha-dark mb-2">
-                🐢まっちゃあぷり
+            <h1 class="text-5xl sm:text-6xl font-extrabold text-matcha-dark mb-2 flex items-center justify-center space-x-4">
+                <span class="text-4xl">
+                    <!-- ヘッダーの絵文字も新しいアイコンを意識して？マークに変更 -->
+                    <span role="img" aria-label="アプリ">❓</span>
+                </span>
+                <span>まっちゃあぷり</span>
             </h1>
+            <p class="text-gray-500 text-lg">AI搭載機能で、もっと便利に！</p>
         </header>
 
-        <!-- アプリケーションリスト -->
+        <!-- アプリ一覧セクション -->
         <section class="mb-10">
             <h2 class="text-3xl font-bold text-gray-800 mb-6 border-b-2 border-matcha-primary pb-2">
                 アプリ一覧
             </h2>
             <div id="app-list-container" class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <!-- JSによって、カードがここに動的に挿入されるぞ！ -->
-                <p id="loading-message" class="text-gray-500 col-span-full text-center">🐢 アプリを読み込み中...</p>
+                <p id="loading-message" class="text-gray-500 col-span-full text-center">❓ アプリを読み込み中...</p>
             </div>
         </section>
 
-        <!-- フッター (クリーン！) -->
+        <!-- フッター -->
         <footer class="text-center text-sm text-gray-500 pt-8 border-t border-gray-300">
             © 2025 Matcha-Kame All Rights Reserved.
         </footer>
         
     </div>
     
-    <!-- 外部のapp_loader.jsを読み込むぞ！ここでAPP_DATA変数が定義される！ -->
+    <!-- アプリデータを読み込む -->
     <script src="app_loader.js"></script>
 
 </body>
