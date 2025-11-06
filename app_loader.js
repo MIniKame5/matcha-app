@@ -39,8 +39,9 @@ const RAW_APP_DATA = [
 // 🚀 新しいパス形式: apps/{アプリID}/{アプリID}.index
 const APP_DATA = RAW_APP_DATA.map(app => ({
     ...app,
-    path: BASE_URL + app.id + '/' + app.id + '.index'
+    path: BASE_URL + app.id + '/' + app.id + '.html'
 }));
 
 // このファイルにはアプリケーションリストのデータのみを定義し、
 // ロジックはindex.html側で処理するぜ！
+
