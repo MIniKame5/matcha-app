@@ -44,4 +44,3 @@ const APP_DATA = RAW_APP_DATA.map(app => ({
 
 // このファイルにはアプリケーションリストのデータのみを定義し、
 // ロジックはindex.html側で処理するぜ！
-
