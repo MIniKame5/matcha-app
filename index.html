@@ -12,8 +12,8 @@
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
         body {
             font-family: 'Inter', sans-serif;
-            /* 💚 修正点: 背景をさらに薄い緑にする (ほぼ白に近いフレッシュな色) */
-            background-color: #F5FFF5; 
+            /* 💚 修正点: ユーザー提供の画像の色に合わせてさらに薄い背景色を採用 */
+            background-color: #F9FFF5; 
         }
         /* アプリ一覧ヘッダーの緑色の線 */
         .app-list-header {
@@ -98,9 +98,9 @@
          * @returns {string} - 生成されたHTML文字列
          */
         function createAppCardContent(app) {
-            // カードの背景は白を維持
+            // 📐 修正点: 縦方向のパディングをpy-6に変更してカードを縦に太くする (px-4はそのまま)
             return `
-                <a href="${app.path}" class="app-card w-full p-4 bg-white border border-gray-100 rounded-xl">
+                <a href="${app.path}" class="app-card w-full py-6 px-4 bg-white border border-gray-100 rounded-xl">
                     <div class="flex items-center mb-2">
                         <!-- アイコンはカラフルな絵文字を維持 -->
                         <span class="text-3xl flex-shrink-0 mr-2">${app.icon}</span>
