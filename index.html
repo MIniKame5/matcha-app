@@ -86,7 +86,7 @@
                 description: "今日のタスクをサクッと管理！忘れ物なし！※開発中"
             }
         ];
-        // 新しいパス生成ロジック: apps/{アプリID}/{アプリID}.index
+        // 新しいパス生成ロジック: apps/{アプリID}/{アプリID}.html
         const APP_DATA = RAW_APP_DATA.map(app => ({
             ...app,
             path: BASE_URL + app.id + '/' + app.id + '.index'
@@ -183,3 +183,4 @@
 
 </body>
 </html>
+
