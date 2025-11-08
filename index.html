@@ -1,159 +1,144 @@
+<!--
+    まっちゃアプリ (index.html) - アイコンを外部ファイルから読み込む修正版
+-->
 <!DOCTYPE html>
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>まっちゃあぷり</title>
-    
-    <!-- Tailwind CSS CDNをロード -->
+    <!-- 究極のまっちゃタイトルだ！🐢が先、飾りなし！ -->
+    <title>🐢まっちゃあぷり</title>
+    <!-- Tailwind CSSを読み込むぞ！これでかっこいいUIを作る！ -->
     <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- ************ 🚨 アイコン設定を icon/icon.png から読み込むように修正 ************ -->
+    <!--
+        外部ファイル 'icon/icon.png' を読み込むように設定。
+        これで、iOS、Android、PCブラウザのファビコンに対応するぜ！
+    -->
+    <!-- iOSのホーム画面用アイコン (apple-touch-icon) -->
+    <link rel="apple-touch-icon" sizes="180x180" href="icon/icon.png">
+    
+    <!-- Androidやその他デバイス、ブラウザタブ用のアイコン (favicon) -->
+    <link rel="icon" type="image/png" sizes="32x32" href="icon/icon.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="icon/icon.png">
+    <!-- ****************************************************************************** -->
+    
     <style>
-        /* Interフォントを適用 (UIベース) */
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
+        /* 🐢 まっちゃカラーパレット */
+        .bg-matcha-light { background-color: #F1F8E9; } /* Lightest Green */
+        .text-matcha-primary { color: #4CAF50; }
+        .bg-matcha-primary { background-color: #4CAF50; }
+        .bg-matcha-dark { color: #388E3C; }
+        
+        /* 修正点: ネイティブのUIフォントと絵文字フォントを全て追加するぞ！
+           これでアプリカード内の絵文字（🍽️, 💬, 🐢など）がカラフルなシステム標準で表示される！ */
         body {
-            font-family: 'Inter', sans-serif;
-            background-color: #F9FFF5; 
-        }
-        /* アプリ一覧ヘッダーの緑色の線 */
-        .app-list-header {
-            position: relative;
-            font-size: 1.5rem;
-            font-weight: 700;
-            color: #4CAF50;
-            padding-bottom: 8px;
-            margin-bottom: 16px;
-        }
-        .app-list-header::after {
-            content: '';
-            position: absolute;
-            left: 0;
-            bottom: 0;
-            width: 100%;
-            height: 3px;
-            background-color: #8BC34A;
-        }
-        /* アプリタイトルのカスタムスタイル */
-        .matcha-title {
-            color: #4CAF50;
-            font-size: clamp(2.5rem, 8vw, 4rem);
-            font-weight: 900;
-            white-space: nowrap; 
-        }
-        /* ぷにっとホバー効果 */
-        .app-card {
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05), 0 1px 3px rgba(0, 0, 0, 0.02);
-            transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out; 
-            cursor: pointer;
-        }
-        .app-card:hover {
-            transform: scale(1.02);
-            box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1), 0 4px 6px rgba(0, 0, 0, 0.05);
-            border-color: #A5D6A7; 
-        }
-
-        /* ヘッダーの亀アイコンのサイズ調整 */
-        .matcha-turtle {
-            font-size: 3rem;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
         }
     </style>
-</head>
-<body class="min-h-screen flex flex-col items-center">
-
     <script>
-        // ==========================================================
-        // 🚨 描画ロジック (UI側 - window.APP_DATAを参照)
-        // ==========================================================
-        
-        /**
-         * 1枚のアプリカードの中身のHTML要素を生成する関数 (リンクへのアクセスが目的！)
-         * @param {Object} app - アプリケーションデータオブジェクト
-         * @returns {string} - 生成されたHTML文字列
-         */
-        function createAppCardContent(app) {
-            // app.path は app_loader.js が動的に生成したものを使う
-            return `
-                <a href="${app.path}" class="app-card w-full py-6 px-4 bg-white border border-gray-100 rounded-xl">
-                    <div class="flex items-center mb-2">
-                        <!-- アイコン -->
-                        <span class="text-3xl flex-shrink-0 mr-2">${app.icon}</span>
-                        
-                        <div class="text-lg font-bold text-gray-800">${app.title}</div>
-                    </div>
-                    <p class="text-xs text-gray-600 mt-1">${app.description}</p>
-                </a>
-            `;
-        }
-
-        /**
-         * 2つのアプリカードを並べたHTML要素を生成する関数 (2列レイアウト用)
-         */
-        function createDualAppCard(app1, app2) {
-            const card1 = app1 ? createAppCardContent(app1) : (app2 ? '<div class="w-full"></div>' : '');
-            const card2 = app2 ? createAppCardContent(app2) : (app1 ? '<div class="w-full"></div>' : '');
-            
-            if (!card1 && !card2) return ''; 
-            
-            return `
-                <div class="grid grid-cols-2 gap-4">
-                    ${card1}
-                    ${card2}
-                </div>
-            `;
-        }
-
-        /**
-         * アプリ一覧を描画するメイン関数
-         * 🚨 app_loader.jsが先にロードされて window.APP_DATA が設定されていることを期待する！
-         */
-        function renderAppList() {
-            // グローバル変数からデータを取得。データがない場合は空配列でフォールバック。
-            const APP_DATA = window.APP_DATA || []; 
-            const container = document.getElementById('app-list-container');
-            
-            if (container) {
-                let html = '';
-                for (let i = 0; i < APP_DATA.length; i += 2) {
-                    html += createDualAppCard(APP_DATA[i], APP_DATA[i + 1]);
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        // bodyで設定しているので、ここでは上書きしない
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        'matcha-primary': '#4CAF50',
+                        'matcha-light': '#F1F8E9',
+                        'matcha-dark': '#388E3C',
+                    }
                 }
-                container.innerHTML = html || '<p class="text-center text-gray-500">現在利用可能なアプリはありません。</p>';
             }
         }
-
-        // DOMContentLoadedイベントで描画を実行する
-        document.addEventListener('DOMContentLoaded', renderAppList);
-    </script>
-    
-    <main class="w-full max-w-5xl p-6 pt-12 md:p-8 mx-auto">
         
-        <!-- ヘッダーエリア -->
-        <header class="text-center mb-10">
-            <div class="flex items-center justify-center mb-1 space-x-4">
-                <span role="img" aria-label="亀" class="matcha-turtle flex-shrink-0">🐢</span>
-                <h1 class="matcha-title whitespace-nowrap">まっちゃあぷり</h1>
-            </div>
+        /**
+         * 外部から読み込んだAPP_DATAを使って、アプリケーションカードをDOMに描画するぞ！
+         * APP_DATAはapp_loader.jsから提供されることを想定する。
+         */
+        function renderAppCards() {
+            const container = document.getElementById('app-list-container');
+            const loadingMessage = document.getElementById('loading-message');
             
-            <p class="text-gray-600 text-sm mt-1">AI搭載機能で、もっと便利に！</p>
+            // APP_DATAがまだ読み込まれていないか、空の場合は何もしない
+            if (!container || typeof APP_DATA === 'undefined' || APP_DATA.length === 0) {
+                // ロードメッセージを残しておく
+                return;
+            }
+
+            // 読み込みメッセージを消すぞ！
+            if (loadingMessage) {
+                loadingMessage.remove();
+            }
+
+            container.innerHTML = '';
+
+            APP_DATA.forEach(app => {
+                const card = document.createElement('a');
+                // 🚨 app_loader.jsでpathが設定されていることを期待する！
+                card.href = app.path || 'javascript:void(0)';
+                card.className = "group block p-6 bg-white border border-gray-100 rounded-xl shadow-lg hover:shadow-2xl transition duration-300 transform hover:scale-[1.02]";
+                
+                // コメント: パスがない場合はカーソルを変更して無効化するぞ
+                if (!app.path || app.path === 'javascript:void(0)') {
+                    card.classList.remove('cursor-pointer');
+                    card.classList.add('cursor-not-allowed', 'opacity-70');
+                }
+                
+                card.innerHTML = `
+                    <div class="flex items-start space-x-4">
+                        <!-- アプリカードのアイコンは絵文字でOK！ -->
+                        <div class="p-3 rounded-full bg-matcha-light group-hover:bg-matcha-primary group-hover:text-white transition duration-300 flex-shrink-0 text-3xl flex items-center justify-center" style="width: 48px; height: 48px;">
+                            ${app.icon || '?'}
+                        </div>
+                        <div>
+                            <h3 class="text-xl font-bold text-gray-900 mb-1 group-hover:text-matcha-dark">${app.title}</h3>
+                            <p class="text-sm text-gray-500">${app.description}</p>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        // ページが読み込まれたら描画を試みる。APP_DATAはapp_loader.jsが設定する。
+        document.addEventListener('DOMContentLoaded', renderAppCards);
+
+    </script>
+</head>
+<body class="bg-matcha-light min-h-screen p-4 sm:p-8">
+
+    <div class="max-w-4xl mx-auto">
+        
+        <!-- ヘッダー (究極のまっちゃタイトル！) -->
+        <header class="text-center mb-10 p-6 rounded-xl">
+            <h1 class="text-5xl sm:text-6xl font-extrabold text-matcha-dark mb-2">
+                🐢まっちゃあぷり
+            </h1>
         </header>
 
-        <!-- アプリ一覧セクション -->
-        <section class="mt-8 max-w-4xl mx-auto">
-            <h2 class="app-list-header mb-4 w-full">アプリ一覧</h2>
-            
-            <!-- アプリカードのコンテナ -->
-            <div id="app-list-container" class="flex flex-col gap-4">
-                <!-- ロジックが起動するまでのプレースホルダー -->
-                <p class="text-center text-gray-500">アプリを読み込み中...</p>
+        <!-- アプリケーションリスト -->
+        <section class="mb-10">
+            <h2 class="text-3xl font-bold text-gray-800 mb-6 border-b-2 border-matcha-primary pb-2">
+                アプリ一覧
+            </h2>
+            <div id="app-list-container" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- JSによって、カードがここに動的に挿入されるぞ！ -->
+                <p id="loading-message" class="text-gray-500 col-span-full text-center">🐢 アプリを読み込み中...</p>
             </div>
         </section>
 
-    </main>
+        <!-- フッター (クリーン！) -->
+        <footer class="text-center text-sm text-gray-500 pt-8 border-t border-gray-300">
+            © 2025 Matcha-Kame All Rights Reserved.
+        </footer>
+        
+    </div>
     
-    <!-- フッター -->
-    <footer class="mt-auto w-full max-w-lg p-6 pb-8 text-center text-xs text-gray-600 mx-auto">
-        <p>© 2025 Matcha-Kame All Rights Reserved.</p>
-    </footer>
-
-    <!-- 🚨 app_loader.jsは、このHTMLがロードされた後に外部で読み込まれることを想定しています。 -->
+    <!-- 外部のapp_loader.jsを読み込むぞ！ここでAPP_DATA変数が定義される！ -->
+    <script src="app_loader.js"></script>
 
 </body>
 </html>
