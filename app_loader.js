@@ -11,10 +11,10 @@ const RAW_APP_DATA = [
         description: "AIがあなたの冷蔵庫に合わせて献立を提案するよ！"
     },
     {
-        id: "TEST",
-        title: "テスト",
-        icon: "📜", 
-        description: "大切なファイルをクラウドで安全に管理しよう。"
+        id: "kamessage",
+        title: "かめっせーじ",
+        icon: "📨", 
+        description: "みんなで仲良くメッセージ！"
     }
 ];
 
@@ -27,4 +27,5 @@ const APP_DATA = RAW_APP_DATA.map(app => ({
 }));
 
 // このファイルにはアプリケーションリストのデータのみを定義し、
+
 // ロジックはindex.html側で処理するぜ！
