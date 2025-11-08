@@ -1,185 +1,137 @@
-/* 基本設定 */
+/* ===== 基本設定と変数 ===== */
+:root {
+    --border-color: #e5e5e5;
+    --left-bg: #f5f5f5;
+    --hover-bg: #e9e9e9;
+    --active-bg: #0b93f6;
+    --text-primary: #000;
+    --text-secondary: #666;
+}
 body {
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-    background-color: #f0f0f0;
+    font-family: -apple-system, BlinkMacFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background-color: #e9e9e9;
     margin: 0;
     display: flex;
     justify-content: center;
     align-items: center;
     height: 100vh;
-}
-
-/* ===== チャット画面のスタイル ===== */
-.chat-container {
-    width: 100%;
-    max-width: 400px;
-    height: 90vh;
-    max-height: 800px;
-    background-color: #ffffff;
-    border-radius: 20px;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-    display: flex;
-    flex-direction: column;
     overflow: hidden;
 }
 
-/* ヘッダー */
-.chat-header {
-    background-color: #f7f7f7;
-    padding: 15px;
-    text-align: center;
-    border-bottom: 1px solid #e0e0e0;
-    display: flex; /* 横並びにするため */
-    justify-content: space-between; /* 両端に寄せる */
-    align-items: center;
-}
-.chat-header h1 {
-    margin: 0;
-    font-size: 16px; /* 少し小さく調整 */
-    font-weight: 600;
-}
-
-/* メッセージリスト */
-.message-list {
-    flex-grow: 1;
-    padding: 20px 10px;
-    overflow-y: auto; /* メッセージが増えたらスクロールできるようにする */
-}
-
-/* 各メッセージのスタイル */
-.message {
-    display: flex;
-    margin-bottom: 15px;
-}
-.bubble {
-    padding: 10px 15px;
-    border-radius: 20px;
-    max-width: 75%;
-    line-height: 1.4;
-    word-wrap: break-word; /* 長い単語でも折り返す */
-}
-
-/* 相手からのメッセージ (受信) */
-.message.received {
-    justify-content: flex-start; /* 左寄せ */
-}
-.message.received .bubble {
-    background-color: #e5e5ea;
-    color: #000000;
-}
-
-/* 自分からのメッセージ (送信) */
-.message.sent {
-    justify-content: flex-end; /* 右寄せ */
-}
-.message.sent .bubble {
-    background-color: #0b93f6; /* iMessageの青いやつ */
-    color: #ffffff;
-}
-
-/* メッセージ入力フォーム */
-.message-form-container {
-    border-top: 1px solid #e0e0e0;
-    background-color: #f7f7f7;
-    padding: 10px;
-}
-.message-form {
-    display: flex;
-}
-.message-form input {
-    flex-grow: 1;
-    border: 1px solid #dcdcdc;
-    border-radius: 20px;
-    padding: 10px 15px;
-    font-size: 16px;
-    outline: none; /* クリックしたときの枠線を消す */
-}
-.message-form button {
-    background-color: #0b93f6;
-    color: white;
-    border: none;
-    border-radius: 50%;
-    width: 40px;
-    height: 40px;
-    margin-left: 10px;
-    font-size: 16px;
-    cursor: pointer;
-    font-weight: bold;
-}
-
-/* ===== ログイン画面のスタイル ===== */
+/* ===== ログイン画面 ===== */
 .login-container {
-    max-width: 320px;
+    max-width: 340px;
     width: 100%;
-    padding: 30px;
+    padding: 40px;
     background-color: white;
-    border-radius: 20px;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    border-radius: 12px;
+    box-shadow: 0 5px 25px rgba(0,0,0,0.1);
     text-align: center;
+    box-sizing: border-box;
 }
-.login-container h1 {
+.login-container h1 { font-size: 24px; margin-bottom: 10px; }
+.login-container p { color: #666; margin-bottom: 20px; }
+.login-container input { width: 100%; padding: 12px; margin-bottom: 10px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 16px; }
+.login-container button { width: 100%; padding: 12px; border: none; border-radius: 8px; color: white; background-color: #4CAF50; cursor: pointer; font-size: 16px; margin-top: 10px; font-weight: bold; }
+.login-container button#signup-button { background-color: #6c757d; }
+.input-group { display: flex; align-items: center; border: 1px solid #ddd; border-radius: 8px; margin-bottom: 10px; }
+.input-group input { border: none; margin-bottom: 0; flex-grow: 1; }
+.input-group span { color: #888; font-size: 14px; white-space: nowrap; padding-right: 12px; }
+
+/* ===== チャット画面の親ラッパー ===== */
+.main-wrapper {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    background-color: white;
+}
+
+/* ===== 左側：トークリスト ===== */
+.user-list-container {
+    width: 100%;
+    border-right: 1px solid var(--border-color);
+    background-color: var(--left-bg);
+    display: flex;
+    flex-direction: column;
+}
+.user-list-header {
+    padding: 15px 20px;
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-shrink: 0;
+}
+.user-list-header h2 { margin: 0; font-size: 24px; font-weight: bold; }
+.new-chat-button {
+    background-color: var(--hover-bg);
+    border: 1px solid var(--border-color);
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
     font-size: 24px;
-    margin-bottom: 10px;
-}
-.login-container p {
-    color: #666;
-    margin-bottom: 20px;
-}
-.login-container input {
-    width: 100%;
-    padding: 12px;
-    margin-bottom: 10px;
-    border: 1px solid #ddd;
-    border-radius: 8px;
-    box-sizing: border-box; /* paddingがwidthに影響しないようにする */
-}
-.login-container button {
-    width: 100%;
-    padding: 12px;
-    border: none;
-    border-radius: 8px;
-    color: white;
-    background-color: #4CAF50; /* まっちゃカラー */
+    color: var(--text-secondary);
     cursor: pointer;
-    font-size: 16px;
-    margin-top: 10px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 0 0 4px 0;
 }
-.login-container button#signup-button {
-    background-color: #777; /* サブボタンの色 */
+.new-chat-button:hover { background-color: #ddd; }
+.user-list { flex-grow: 1; overflow-y: auto; }
+.user-list .no-chats { padding: 20px; color: var(--text-secondary); }
+.user-item { display: flex; align-items: center; padding: 12px 20px; cursor: pointer; border-bottom: 1px solid var(--border-color); }
+.user-item:hover { background-color: var(--hover-bg); }
+.user-item.active { background-color: var(--active-bg); color: white; }
+.user-item.active .last-message { color: #e0e0e0; }
+.avatar { width: 48px; height: 48px; border-radius: 50%; background-color: #ddd; display: flex; justify-content: center; align-items: center; font-size: 24px; margin-right: 12px; flex-shrink: 0; }
+.user-info { overflow: hidden; }
+.username { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.last-message { font-size: 14px; color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* ===== 右側：チャット画面 ===== */
+.chat-container {
+    display: none;
+    width: 100%;
+    height: 100%;
+    flex-direction: column;
+    overflow: hidden;
+}
+.chat-header { background-color: #fff; padding: 15px; text-align: center; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; }
+.chat-header h1 { margin: 0; font-size: 16px; font-weight: 600; }
+#logout-button { background: #e5e5ea; color: #333; border: none; padding: 5px 10px; border-radius: 8px; cursor: pointer; font-size: 12px; }
+.message-list { flex-grow: 1; padding: 20px; overflow-y: auto; }
+.message { display: flex; margin-bottom: 15px; }
+.bubble { padding: 10px 15px; border-radius: 20px; max-width: 75%; line-height: 1.4; word-wrap: break-word; }
+.message.received { justify-content: flex-start; }
+.message.received .bubble { background-color: #e5e5ea; color: #000000; }
+.message.sent { justify-content: flex-end; }
+.message.sent .bubble { background-color: #0b93f6; color: #ffffff; }
+.message-form-container { border-top: 1px solid var(--border-color); background-color: #f7f7f7; padding: 10px; flex-shrink: 0; }
+.message-form { display: flex; }
+.message-form input { flex-grow: 1; border: 1px solid #dcdcdc; border-radius: 20px; padding: 10px 15px; font-size: 16px; outline: none; }
+.message-form button { background-color: #0b93f6; color: white; border: none; border-radius: 50%; width: 40px; height: 40px; margin-left: 10px; font-size: 16px; cursor: pointer; font-weight: bold; }
+
+/* ===== レスポンシブ設定 (PC表示) ===== */
+@media (min-width: 768px) {
+    .main-wrapper {
+        max-width: 1000px;
+        height: 95vh;
+        max-height: 800px;
+        border-radius: 10px;
+        box-shadow: 0 5px 25px rgba(0,0,0,0.1);
+        overflow: hidden;
+    }
+    .user-list-container {
+        width: 320px;
+        flex-shrink: 0;
+    }
+    .chat-container {
+        display: flex;
+    }
 }
 
-/* ログアウトボタンのスタイル */
-#logout-button {
-    background: #e5e5ea;
-    color: #333;
-    border: none;
-    padding: 5px 10px;
-    border-radius: 8px;
-    cursor: pointer;
-    font-size: 12px;
-}
-
-/* 要素を非表示にするための便利クラス */
+/* ===== ユーティリティ ===== */
 .hidden {
     display: none !important;
-}
-
-/* ユーザー名入力欄のスタイル */
-.input-group {
-    display: flex;
-    align-items: center;
-    border: 1px solid #ddd;
-    border-radius: 8px;
-    margin-bottom: 10px;
-    padding-right: 12px;
-}
-.input-group input {
-    border: none;
-    margin-bottom: 0;
-    flex-grow: 1;
-}
-.input-group span {
-    color: #888;
-    font-size: 14px;
-    white-space: nowrap; /* 折り返さないようにする */
 }
