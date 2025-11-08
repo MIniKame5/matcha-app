@@ -18,7 +18,7 @@ const messageInput = document.getElementById('message-input');
 const logoutButton = document.getElementById('logout-button');
 
 let currentChatId = null;
-let messageListener = null; // メッセージのリスナーを管理するための変数
+let messageListener = null;
 
 // ===================================
 // ログイン状態の監視
@@ -33,7 +33,7 @@ auth.onAuthStateChanged(user => {
         mainWrapper.classList.add('hidden');
         currentChatId = null;
         if (messageListener) {
-            messageListener.off(); // ログアウト時にリスナーを解除
+            messageListener.off();
         }
     }
 });
@@ -41,6 +41,8 @@ auth.onAuthStateChanged(user => {
 // ===================================
 // イベントリスナー
 // ===================================
+
+// ▼▼▼▼▼▼▼▼▼▼ ここを修正したぞ！ ▼▼▼▼▼▼▼▼▼▼
 signupButton.addEventListener('click', () => {
     const username = usernameInput.value.trim();
     const password = passwordInput.value;
@@ -48,9 +50,24 @@ signupButton.addEventListener('click', () => {
         return alert("IDとパスワードを入力してください");
     }
     const email = username + '@account.matcha-kame.com';
+
     auth.createUserWithEmailAndPassword(email, password)
-        .catch(error => { alert('エラー: ' + error.message); });
+        .then(userCredential => {
+            // ★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★
+            //             ↓↓↓ この処理が重要 ↓↓↓
+            // ★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★
+            // アカウント作成が成功したら、すぐにユーザー名簿(/users)に登録する！
+            console.log('アカウント作成成功！名簿に登録します:', userCredential.user.email);
+            db.ref('users/' + userCredential.user.uid).set({
+                email: userCredential.user.email,
+                username: username
+            });
+        })
+        .catch(error => {
+            alert('エラー: ' + error.message);
+        });
 });
+// ▲▲▲▲▲▲▲▲▲▲ ここまで ▲▲▲▲▲▲▲▲▲▲
 
 loginButton.addEventListener('click', () => {
     const username = usernameInput.value.trim();
@@ -78,15 +95,13 @@ newChatButton.addEventListener('click', () => {
         return alert("自分自身とチャットはできません。");
     }
 
-    // 相手が存在するかチェック (簡易的)
+    // 名簿(/users)を検索して、相手が存在するかチェックする
     db.ref('users').orderByChild('email').equalTo(targetUserEmail).once('value', snapshot => {
         if (!snapshot.exists()) {
             return alert('エラー: そのIDのユーザーは見つかりませんでした。');
         }
         
         const targetUid = Object.keys(snapshot.val())[0];
-        const targetUserData = snapshot.val()[targetUid];
-
         const chatId = [auth.currentUser.uid, targetUid].sort().join('_');
         createChatRoom(chatId, currentUserEmail, targetUserEmail, targetUid);
     });
@@ -151,7 +166,7 @@ function openChatRoom(chatId, partnerUsername) {
     if(activeItem) activeItem.classList.add('active');
 
     if (messageListener) {
-        messageListener.off(); // 前のリスナーを解除
+        messageListener.off();
     }
     
     messageListener = db.ref(`chats/${currentChatId}/messages`).orderByChild('timestamp');
@@ -174,11 +189,6 @@ function createChatRoom(chatId, currentUserEmail, targetUserEmail, targetUid) {
 
     db.ref(`user_chats/${targetUid}/${chatId}`).set({
         members: [currentUserEmail, targetUserEmail]
-    });
-
-    // ユーザー情報を保存する（相手の存在チェックに使う）
-    db.ref(`users/${auth.currentUser.uid}`).set({
-        email: currentUserEmail
     });
 
     openChatRoom(chatId, targetUserEmail.split('@')[0]);
