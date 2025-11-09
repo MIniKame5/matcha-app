@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎧 まっちゃミュージック</title>
+    <link rel="stylesheet" href="music.css">
+</head>
+<body>
+
+    <div class="music-container">
+        <header class="main-header">
+            <h1>🎧 Matcha Music</h1>
+            <p>君だけのお気に入りライブラリ</p>
+        </header>
+        
+        <main>
+            <div id="song-list" class="song-list"></div>
+            <div id="lyrics-container" class="lyrics-container">
+                <h2>歌詞</h2>
+                <div id="lyrics-display" class="lyrics-display">
+                    曲を選択すると、ここに歌詞が表示されます。
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <footer class="player-controls">
+        <div class="song-info">
+            <div id="current-song-title">曲が選択されていません</div>
+            <div id="current-song-artist"></div>
+        </div>
+        <div class="player-buttons">
+            <button id="play-pause-button">▶</button>
+        </div>
+        <div class="progress-container">
+            <span id="current-time">0:00</span>
+            <input type="range" id="progress-bar" value="0" step="1">
+            <span id="total-duration">0:00</span>
+        </div>
+    </footer>
+
+    <audio id="audio-player"></audio>
+    <script src="music.js"></script>
+</body>
+</html>
