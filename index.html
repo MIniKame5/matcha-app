@@ -29,81 +29,56 @@
         .bg-matcha-primary { background-color: #4CAF50; }
         .bg-matcha-dark { color: #388E3C; }
         body { font-family: 'Inter', sans-serif; }
+        
+        /* ▼▼▼▼▼ モーダル用のスタイルを追加！ ▼▼▼▼▼ */
+        .hidden { display: none; }
     </style>
 </head>
 <body class="bg-matcha-light min-h-screen p-4 sm:p-8">
 
     <div class="max-w-4xl mx-auto">
-        
         <header class="text-center mb-10 p-6 rounded-xl relative">
-            <h1 class="text-5xl sm:text-6xl font-extrabold text-matcha-dark mb-2">
-                🐢まっちゃあぷり
-            </h1>
+            <h1 class="text-5xl sm:text-6xl font-extrabold text-matcha-dark mb-2">🐢まっちゃあぷり</h1>
             <div id="auth-container" class="absolute top-4 right-4 text-sm"></div>
         </header>
 
         <section class="mb-10">
-            <h2 class="text-3xl font-bold text-gray-800 mb-6 border-b-2 border-matcha-primary pb-2">
-                アプリ一覧
-            </h2>
-            <div id="app-list-container" class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <p id="loading-message" class="text-gray-500 col-span-full text-center">🐢 アプリを読み込み中...</p>
-            </div>
+            <h2 class="text-3xl font-bold text-gray-800 mb-6 border-b-2 border-matcha-primary pb-2">アプリ一覧</h2>
+            <div id="app-list-container" class="grid grid-cols-1 md:grid-cols-2 gap-6"></div>
         </section>
 
         <footer class="text-center text-sm text-gray-500 pt-8 border-t border-gray-300">
             © 2025 Matcha-Kame All Rights Reserved.
         </footer>
-        
     </div>
-    
-    <!-- ▼▼▼▼▼▼▼▼▼▼ ここからが、この司令官の本当の仕事だ！ ▼▼▼▼▼▼▼▼▼▼ -->
 
-    <!-- 1. まず、部品リストを読み込む -->
+    <!-- ▼▼▼▼▼▼▼▼▼▼ ここに、ログインモーダルの骨格を追加だ！ ▼▼▼▼▼▼▼▼▼▼ -->
+    <div id="login-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <!-- 背景のオーバーレイ -->
+        <div id="modal-overlay" class="absolute inset-0"></div>
+
+        <!-- モーダル本体 -->
+        <div class="relative bg-white rounded-2xl shadow-lg p-8 w-full max-w-sm">
+            <button id="close-modal-button" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 text-2xl">&times;</button>
+            
+            <h2 id="modal-title" class="text-2xl font-bold text-center mb-2 text-green-800">まっちゃアカウント</h2>
+            <p id="modal-domain-display" class="text-center text-gray-500 mb-6 font-semibold hidden">@account.matcha-kame.com</p>
+
+            <form id="login-form">
+                <input id="modal-username-input" type="text" placeholder="希望のID" class="w-full px-4 py-3 border border-gray-300 rounded-lg mb-4 focus:outline-none focus:ring-2 focus:ring-green-500" required>
+                <input id="modal-password-input" type="password" placeholder="パスワード (6文字以上)" class="w-full px-4 py-3 border border-gray-300 rounded-lg mb-4 focus:outline-none focus:ring-2 focus:ring-green-500" required>
+                <button id="modal-submit-button" type="submit" class="w-full bg-green-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-green-700 transition duration-300">ログイン</button>
+            </form>
+            
+            <p id="modal-toggle-container" class="text-center text-sm text-gray-500 mt-6">
+                <span id="modal-toggle-text">アカウントがない場合はこちら</span>
+                <button id="modal-toggle-button" class="text-green-600 hover:underline font-semibold ml-1">アカウント作成</button>
+            </p>
+        </div>
+    </div>
+    <!-- ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲ -->
+    
     <script src="app_loader.js"></script>
-
-    <!-- 2. 次に、この司令官自身が、アプリを組み立てる！ -->
-    <script>
-        // ===================================
-        // アプリカードを描画する関数（組み立て係のロジック）
-        // ===================================
-        function renderAppCards() {
-            const container = document.getElementById('app-list-container');
-            const loadingMessage = document.getElementById('loading-message');
-            // APP_DATAは、app_loader.jsから提供される！
-            if (!container || !APP_DATA) return;
-
-            if(loadingMessage) loadingMessage.remove();
-            container.innerHTML = '';
-
-            APP_DATA.forEach(app => {
-                const card = document.createElement('a');
-                card.href = app.path || '#';
-                if (app.path) card.target = '_blank';
-                card.className = "group block p-6 bg-white border border-gray-100 rounded-xl shadow-lg hover:shadow-2xl transition duration-300";
-                card.innerHTML = `
-                    <div class="flex items-start space-x-4">
-                        <div class="p-3 rounded-full bg-matcha-light text-3xl flex items-center justify-center" style="width: 48px; height: 48px;">
-                            ${app.icon || '?'}
-                        </div>
-                        <div>
-                            <h3 class="text-xl font-bold text-gray-900 mb-1">${app.title}</h3>
-                            <p class="text-sm text-gray-500">${app.description}</p>
-                        </div>
-                    </div>
-                `;
-                container.appendChild(card);
-            });
-        }
-
-        // ページが読み込まれたら、すぐに組み立て作業を開始する！
-        document.addEventListener('DOMContentLoaded', renderAppCards);
-    </script>
-
-    <!-- 3. 最後に、警備員を呼び出して、配置につかせる！ -->
     <script src="auth_handler.js"></script>
-    
-    <!-- ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲ -->
-
 </body>
 </html>
