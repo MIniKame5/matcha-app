@@ -39,8 +39,6 @@
             <h1 class="text-5xl sm:text-6xl font-extrabold text-matcha-dark mb-2">
                 🐢まっちゃあぷり
             </h1>
-
-            <!-- ログイン状態を表示するエリア -->
             <div id="auth-container" class="absolute top-4 right-4 text-sm"></div>
         </header>
 
@@ -59,8 +57,53 @@
         
     </div>
     
+    <!-- ▼▼▼▼▼▼▼▼▼▼ ここからが、この司令官の本当の仕事だ！ ▼▼▼▼▼▼▼▼▼▼ -->
+
+    <!-- 1. まず、部品リストを読み込む -->
     <script src="app_loader.js"></script>
+
+    <!-- 2. 次に、この司令官自身が、アプリを組み立てる！ -->
+    <script>
+        // ===================================
+        // アプリカードを描画する関数（組み立て係のロジック）
+        // ===================================
+        function renderAppCards() {
+            const container = document.getElementById('app-list-container');
+            const loadingMessage = document.getElementById('loading-message');
+            // APP_DATAは、app_loader.jsから提供される！
+            if (!container || !APP_DATA) return;
+
+            if(loadingMessage) loadingMessage.remove();
+            container.innerHTML = '';
+
+            APP_DATA.forEach(app => {
+                const card = document.createElement('a');
+                card.href = app.path || '#';
+                if (app.path) card.target = '_blank';
+                card.className = "group block p-6 bg-white border border-gray-100 rounded-xl shadow-lg hover:shadow-2xl transition duration-300";
+                card.innerHTML = `
+                    <div class="flex items-start space-x-4">
+                        <div class="p-3 rounded-full bg-matcha-light text-3xl flex items-center justify-center" style="width: 48px; height: 48px;">
+                            ${app.icon || '?'}
+                        </div>
+                        <div>
+                            <h3 class="text-xl font-bold text-gray-900 mb-1">${app.title}</h3>
+                            <p class="text-sm text-gray-500">${app.description}</p>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        // ページが読み込まれたら、すぐに組み立て作業を開始する！
+        document.addEventListener('DOMContentLoaded', renderAppCards);
+    </script>
+
+    <!-- 3. 最後に、警備員を呼び出して、配置につかせる！ -->
     <script src="auth_handler.js"></script>
+    
+    <!-- ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲ -->
 
 </body>
 </html>
