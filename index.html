@@ -1,144 +1,66 @@
-<!--
-    まっちゃアプリ (index.html) - アイコンを外部ファイルから読み込む修正版
--->
 <!DOCTYPE html>
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <!-- 究極のまっちゃタイトルだ！🐢が先、飾りなし！ -->
     <title>🐢まっちゃあぷり</title>
-    <!-- Tailwind CSSを読み込むぞ！これでかっこいいUIを作る！ -->
     <script src="https://cdn.tailwindcss.com"></script>
-    
-    <!-- ************ 🚨 アイコン設定を icon/icon.png から読み込むように修正 ************ -->
-    <!--
-        外部ファイル 'icon/icon.png' を読み込むように設定。
-        これで、iOS、Android、PCブラウザのファビコンに対応するぜ！
-    -->
-    <!-- iOSのホーム画面用アイコン (apple-touch-icon) -->
-    <link rel="apple-touch-icon" sizes="180x180" href="icon/icon.png">
-    
-    <!-- Androidやその他デバイス、ブラウザタブ用のアイコン (favicon) -->
-    <link rel="icon" type="image/png" sizes="32x32" href="icon/icon.png">
-    <link rel="icon" type="image/png" sizes="16x16" href="icon/icon.png">
-    <!-- ****************************************************************************** -->
+    <link rel="icon" href="icon/icon.png">
+
+    <!-- Firebaseの魔法の呪文 -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    <script>
+      const firebaseConfig = {
+        apiKey: "AIzaSyBzNGiNmNhNs_EZdLTVTmJ6YZM-oUmv0eo",
+        authDomain: "matcha-account-matcha-kame.firebaseapp.com",
+        projectId: "matcha-account-matcha-kame",
+        storageBucket: "matcha-account-matcha-kame.firebasestorage.app",
+        messagingSenderId: "895445531816",
+        appId: "1:895445531816:web:9e53d85e94493e4e14169d"
+      };
+      firebase.initializeApp(firebaseConfig);
+      const auth = firebase.auth(); 
+    </script>
     
     <style>
-        /* 🐢 まっちゃカラーパレット */
-        .bg-matcha-light { background-color: #F1F8E9; } /* Lightest Green */
+        .bg-matcha-light { background-color: #F1F8E9; }
         .text-matcha-primary { color: #4CAF50; }
         .bg-matcha-primary { background-color: #4CAF50; }
         .bg-matcha-dark { color: #388E3C; }
-        
-        /* 修正点: ネイティブのUIフォントと絵文字フォントを全て追加するぞ！
-           これでアプリカード内の絵文字（🍽️, 💬, 🐢など）がカラフルなシステム標準で表示される！ */
-        body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
-        }
+        body { font-family: 'Inter', sans-serif; }
     </style>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    fontFamily: {
-                        // bodyで設定しているので、ここでは上書きしない
-                        sans: ['Inter', 'sans-serif'],
-                    },
-                    colors: {
-                        'matcha-primary': '#4CAF50',
-                        'matcha-light': '#F1F8E9',
-                        'matcha-dark': '#388E3C',
-                    }
-                }
-            }
-        }
-        
-        /**
-         * 外部から読み込んだAPP_DATAを使って、アプリケーションカードをDOMに描画するぞ！
-         * APP_DATAはapp_loader.jsから提供されることを想定する。
-         */
-        function renderAppCards() {
-            const container = document.getElementById('app-list-container');
-            const loadingMessage = document.getElementById('loading-message');
-            
-            // APP_DATAがまだ読み込まれていないか、空の場合は何もしない
-            if (!container || typeof APP_DATA === 'undefined' || APP_DATA.length === 0) {
-                // ロードメッセージを残しておく
-                return;
-            }
-
-            // 読み込みメッセージを消すぞ！
-            if (loadingMessage) {
-                loadingMessage.remove();
-            }
-
-            container.innerHTML = '';
-
-            APP_DATA.forEach(app => {
-                const card = document.createElement('a');
-                // 🚨 app_loader.jsでpathが設定されていることを期待する！
-                card.href = app.path || 'javascript:void(0)';
-                card.className = "group block p-6 bg-white border border-gray-100 rounded-xl shadow-lg hover:shadow-2xl transition duration-300 transform hover:scale-[1.02]";
-                
-                // コメント: パスがない場合はカーソルを変更して無効化するぞ
-                if (!app.path || app.path === 'javascript:void(0)') {
-                    card.classList.remove('cursor-pointer');
-                    card.classList.add('cursor-not-allowed', 'opacity-70');
-                }
-                
-                card.innerHTML = `
-                    <div class="flex items-start space-x-4">
-                        <!-- アプリカードのアイコンは絵文字でOK！ -->
-                        <div class="p-3 rounded-full bg-matcha-light group-hover:bg-matcha-primary group-hover:text-white transition duration-300 flex-shrink-0 text-3xl flex items-center justify-center" style="width: 48px; height: 48px;">
-                            ${app.icon || '?'}
-                        </div>
-                        <div>
-                            <h3 class="text-xl font-bold text-gray-900 mb-1 group-hover:text-matcha-dark">${app.title}</h3>
-                            <p class="text-sm text-gray-500">${app.description}</p>
-                        </div>
-                    </div>
-                `;
-                container.appendChild(card);
-            });
-        }
-
-        // ページが読み込まれたら描画を試みる。APP_DATAはapp_loader.jsが設定する。
-        document.addEventListener('DOMContentLoaded', renderAppCards);
-
-    </script>
 </head>
 <body class="bg-matcha-light min-h-screen p-4 sm:p-8">
 
     <div class="max-w-4xl mx-auto">
         
-        <!-- ヘッダー (究極のまっちゃタイトル！) -->
-        <header class="text-center mb-10 p-6 rounded-xl">
+        <header class="text-center mb-10 p-6 rounded-xl relative">
             <h1 class="text-5xl sm:text-6xl font-extrabold text-matcha-dark mb-2">
                 🐢まっちゃあぷり
             </h1>
+
+            <!-- ログイン状態を表示するエリア -->
+            <div id="auth-container" class="absolute top-4 right-4 text-sm"></div>
         </header>
 
-        <!-- アプリケーションリスト -->
         <section class="mb-10">
             <h2 class="text-3xl font-bold text-gray-800 mb-6 border-b-2 border-matcha-primary pb-2">
                 アプリ一覧
             </h2>
             <div id="app-list-container" class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <!-- JSによって、カードがここに動的に挿入されるぞ！ -->
                 <p id="loading-message" class="text-gray-500 col-span-full text-center">🐢 アプリを読み込み中...</p>
             </div>
         </section>
 
-        <!-- フッター (クリーン！) -->
         <footer class="text-center text-sm text-gray-500 pt-8 border-t border-gray-300">
             © 2025 Matcha-Kame All Rights Reserved.
         </footer>
         
     </div>
     
-    <!-- 外部のapp_loader.jsを読み込むぞ！ここでAPP_DATA変数が定義される！ -->
     <script src="app_loader.js"></script>
+    <script src="auth_handler.js"></script>
 
 </body>
 </html>
