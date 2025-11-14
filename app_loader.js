@@ -1,24 +1,31 @@
-// ===================================
-// アプリのデータ（部品リスト）
-// このファイルは、このリストを提供するだけ！
-// ===================================
-const APP_DATA = [
+// 🚨 修正後の新しいベースURL (https://app.matcha-kame.com/apps/) を定数として定義！
+const BASE_URL = "https://app.matcha-kame.com/apps/";
+
+// アプリケーションの定義リスト (RAW DATA)
+// 🚨 修正: アイコンを全てネイティブ絵文字に戻すぞ！これで可愛さが戻る！
+const RAW_APP_DATA = [
     {
-        title: 'まっちゃAI',
-        description: 'のんびり屋さんの「かめAI」と、ため口で気軽におしゃべりできるチャットアプリ。',
-        icon: '🤖',
-        path: 'https://ai.matcha-kame.com/'
+        id: "meal_planner",
+        title: "AI献立プランナー",
+        icon: "🍽️", 
+        description: "AIがあなたの冷蔵庫に合わせて献立を提案するよ！"
     },
     {
-        title: 'かめっせーじ',
-        description: '友達と1対1で会話できる、iMessage風のリアルタイムチャットアプリ。',
-        icon: '💬',
-        path: 'apps/kamessage/kamessage.html'
-    },
-    {
-        title: '献立プランナー',
-        description: 'AIが自動でおいしい料理をかんがえてくれる！',
-        icon: '🍳',
-        path: 'apps/kamessage/kamessage.html'
-    },
+        id: "kamessage",
+        title: "かめっせーじ",
+        icon: "📨", 
+        description: "みんなで仲良くメッセージ！"
+    }
 ];
+
+// IDを使ってBASE_URLと組み合わせ、pathプロパティを動的に生成する！
+const APP_DATA = RAW_APP_DATA.map(app => ({
+    ...app,
+    // 🚨 修正点 ①: アプリのパスを「apps/ID/ID.html」の形式に修正するぞ！
+    // 例: BASE_URL + 'meal_planner' + '/' + 'meal_planner' + '.html'
+    path: BASE_URL + app.id + '/' + app.id + '.html'
+}));
+
+// このファイルにはアプリケーションリストのデータのみを定義し、
+
+// ロジックはindex.html側で処理するぜ！
